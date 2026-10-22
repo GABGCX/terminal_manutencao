@@ -160,3 +160,17 @@ nav .area button{border-bottom:0}
 nav .area button.on{color:var(--accent-ink);background:var(--fg)}
 nav .area button.on .k{color:var(--accent-ink)}
 #ps-work .tl li{border-bottom:1px dotted var(--line)}
+
+/* perfis */
+body:not(.can-mat) .w-mat, body:not(.can-con) .w-con, body.sem-man .man-only{display:none!important}
+body.kiosk nav, body.kiosk #banner, body.kiosk .meta .on-only{display:none!important}
+
+/* painel do hall (TV) */
+.hall-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;font-family:var(--crt);font-size:28px;color:var(--accent)}
+.hall-top .muted{font-family:var(--mono);font-size:12px;align-self:center}
+.hall-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:14px;margin-top:14px}
+.hall-kpis .kpi{padding:12px 14px 10px}
+.hall-kpis .kpi .l{font-size:13px}
+.hall-kpis .kpi .v{font-size:clamp(56px,7vw,96px)}
+.hall-kpis .kpi.ok .v{color:var(--ok)}
+body.hall-on .wrap{max-width:1600px}

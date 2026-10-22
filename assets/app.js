@@ -230,12 +230,38 @@ function qzList(){ let first = "2026-10-01";
   return out.reverse(); }
 
 /* ---------------- estado ---------------- */
-const S = { placas:{}, diario:[], materiais:[], conhecimento:[], config:{}, relat:{}, ready:{}, derived:{} };
+const S = { placas:{}, diario:[], materiais:[], conhecimento:[], config:{}, relat:{}, ready:{}, derived:{}, celulas:[], habil:[], escala:[] };
 const UI = { area:"man", view:"painel", ficha:null, plFilt:"Abertas", diFilt:"7 dias", maFilt:"Pendentes", coFilt:"Todos", editDi:null, fichaDirty:false, relDirty:false, ro:false };
 let sb=null, ME=null; const PROFILES={};
+
+/* ---------------- papéis e células (espelho das regras do banco; quem decide é o RLS) ---------------- */
+const PAPEIS = ["admin","responsavel","auxiliar","diretoria","vendas","engenharia","painel","pendente"];
+const papelNome = p => ({admin:"gestor", responsavel:"responsável", auxiliar:"auxiliar", diretoria:"diretoria", vendas:"vendas", engenharia:"engenharia",
+  painel:"painel do hall", pendente:"pendente", tecnico:"técnico", operador:"operador", leitura:"leitura"})[p] || p;
+const CELULAS_PAD = [["SMD","SMD e montagem eletrônica"],["USI","Usinagem e protótipo"],["SER","Serralheria e estruturas"],["INT","Integração robusta"],
+  ["MONT","Montagem final, testes e expedição"],["MAN","Manutenção"],["GES","Gestão, qualidade e estoque"]];
+const celulas = () => S.celulas.length ? S.celulas.map(c=>[c.codigo, c.nome]) : CELULAS_PAD;
+const celNome = c => (celulas().find(x=>x[0]===c)||[c,c||"-"])[1];
+const NIVEIS = ["0 · não faz","1 · em treinamento","2 · faz sozinho","3 · domina","4 · ensina"];
 const isAdm = () => !!ME && ME.papel==="admin";
-const papelNome = p => ({tecnico:"técnico", operador:"operador", admin:"admin", leitura:"leitura"})[p] || p;
-const canDel = autor => isAdm() || (!!ME && ME.papel==="tecnico" && !!autor && autor===ME.id);
+const temPapel = (...ps) => !!ME && ps.includes(ME.papel);
+const interno = () => temPapel("admin","responsavel","auxiliar");
+const veMan = () => temPapel("admin","responsavel","auxiliar","diretoria","engenharia");
+const veProd = () => veMan() || temPapel("vendas");
+const escalaDe = (uid, dia) => (S.escala.find(e=>e.pessoa===uid && e.data===(dia||today()))||{}).celula || "";
+const nivelDe = (uid, cel) => +((S.habil.find(h=>h.pessoa===uid && h.celula===cel)||{}).nivel||0);
+function podeReg(cel){
+  if (!ME) return false;
+  if (ME.papel==="admin") return true;
+  if (ME.papel==="responsavel") return ME.celula===cel || nivelDe(ME.id, cel)>=2;
+  if (ME.papel==="auxiliar") return !!cel && escalaDe(ME.id)===cel;
+  return false;
+}
+const celulaHoje = () => !ME ? "" : ME.papel==="auxiliar" ? escalaDe(ME.id) : (ME.celula||"");
+const canDel = (autor, tab) => isAdm() || (!!ME && !!autor && autor===ME.id &&
+  (tab==="materiais" ? interno() : tab==="conhecimento" ? temPapel("responsavel","engenharia") : podeReg("MAN")));
+const canMatSt = () => temPapel("admin","responsavel");
+const canConSt = () => temPapel("admin","responsavel","engenharia");
 
 function cfg(){
   let cat = Array.isArray(S.config.catalogo) && S.config.catalogo.length ? S.config.catalogo : CAT_PADRAO;
@@ -331,6 +357,7 @@ function renderAll(){
   else if (v==="evolucao") rEvo();
   else if (v==="config") rCfg();
   else if (v.startsWith("p-") && window.PROD) PROD.render(v);
+  if (window.PROD) PROD.hall(v==="hall");
   resolveAuthors();
 }
 function loading(){ return !S.ready.placas || !S.ready.diario; }
@@ -445,7 +472,7 @@ function rMat(){
   $("ma-lista").innerHTML = L.length ? `<div class="tw"><table><thead><tr><th>Pedido</th><th>Item</th><th>Especificação</th><th class="n">Qtd</th><th>Placa</th><th>Urgência</th><th>Status</th><th class="n">Dias</th><th>Obs</th><th></th></tr></thead><tbody>${
     L.map(m=>{ const pend = MPEND.has(m.status||"Solicitado"); const dd = m.recebido ? diff(m.data,m.recebido) : (pend && m.data ? diff(m.data,T) : "");
       return `<tr><td class="nw">${brs(m.data)}</td><td>${esc(m.item)}</td><td>${esc(m.spec)}</td><td class="n">${esc(m.qtd||"")}</td><td class="nw">${esc(m.placa||"-")}</td><td class="p-${esc(m.urg||"Normal")}">${esc(m.urg||"Normal")}</td>
-      <td>${UI.ro?esc(m.status||"Solicitado"):`<select data-mst="${esc(m._id)}" aria-label="status">${opts(MSTAT, m.status||"Solicitado")}</select>`}</td><td class="n${pend&&dd>=7?" alert":""}">${dd}</td><td>${esc(m.obs)}</td><td class="w-only">${canDel(m.criado_por)?`<button class="lk del" data-dma="${esc(m._id)}">apagar</button>`:""}</td></tr>`; }).join("")}</tbody></table></div>`
+      <td>${!(canMatSt()||(interno()&&m.criado_por===ME.id))?esc(m.status||"Solicitado"):`<select data-mst="${esc(m._id)}" aria-label="status">${opts(MSTAT, m.status||"Solicitado")}</select>`}</td><td class="n${pend&&dd>=7?" alert":""}">${dd}</td><td>${esc(m.obs)}</td><td>${canDel(m.criado_por,"materiais")?`<button class="lk del" data-dma="${esc(m._id)}">apagar</button>`:""}</td></tr>`; }).join("")}</tbody></table></div>`
     : `<div class="empty">Nenhum pedido ${UI.maFilt==="Todos"?"registrado":UI.maFilt.toLowerCase()}.</div>`;
 }
 
@@ -458,7 +485,7 @@ function rCon(){
   if (UI.coFilt==="Viraram POP") L = L.filter(c=>["Virou POP","Implementado"].includes(c.status));
   $("co-lista").innerHTML = L.length ? `<ul class="tl">${L.map(c=>`<li><span class="d">${br(c.data)}</span><span><span class="tag">[${esc((c.tipo||"").toUpperCase())}]</span> <b>${esc(c.titulo)}</b><br>${esc(c.desc)}
     ${c.acao?`<br><span class="x">ação: ${esc(c.acao)}${c.resp?" · resp.: "+esc(c.resp):""}</span>`:""}${c.placas?`<br><span class="x">placas: ${esc(c.placas)}${c.produto?" · "+esc(c.produto):""}</span>`:""}
-    <div class="row" style="margin-top:4px">${UI.ro?`<span class="muted">${esc(c.status||"Registrado")}</span>`:`<select data-cst="${esc(c._id)}" aria-label="status" style="width:auto">${opts(CSTAT,c.status||"Registrado")}</select>${canDel(c.criado_por)?`<button class="lk del w-only" data-dco="${esc(c._id)}">apagar</button>`:""}`}</div></span></li>`).join("")}</ul>`
+    <div class="row" style="margin-top:4px">${!canConSt()?`<span class="muted">${esc(c.status||"Registrado")}</span>`:`<select data-cst="${esc(c._id)}" aria-label="status" style="width:auto">${opts(CSTAT,c.status||"Registrado")}</select>`}${canDel(c.criado_por,"conhecimento")?`<button class="lk del" data-dco="${esc(c._id)}">apagar</button>`:""}</div></span></li>`).join("")}</ul>`
     : `<div class="empty">Nada aqui ainda. Defeito que se repete, procedimento que pode virar POP, falta de documentação: registre acima.</div>`;
 }
 
@@ -566,14 +593,20 @@ function rCfg(){
   const ex = Object.values(S.placas).filter(p=>p.exemplo).length;
   $("ex-msg").textContent = ex ? `${ex} placas de exemplo carregadas.` : "Nenhum exemplo carregado.";
   $("exp-btns").innerHTML = ["placas","diario","materiais","conhecimento"].map(c=>`<button class="btn sec" type="button" data-exp="${c}">${c}.csv</button>`).join("");
-  $("mc-info").textContent = ME ? `${ME.nome||""} · ${ME.email||""} · papel: ${papelNome(ME.papel)}` : "";
+  $("mc-info").textContent = ME ? `${ME.nome||""} · ${ME.email||""} · papel: ${papelNome(ME.papel)}${ME.celula?" · célula: "+ME.celula+" ("+celNome(ME.celula)+")":""}${ME.cargo?" · "+ME.cargo:""}` : "";
   if (isAdm()){
     const L = Object.values(PROFILES).sort((a,b)=>(a.nome||"").localeCompare(b.nome||""));
-    $("us-lista").innerHTML = `<div class="tw"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Ativo</th><th></th></tr></thead><tbody>${L.map(p=>`<tr>
+    const ord = p => PAPEIS.indexOf(p.papel)<0 ? 99 : PAPEIS.indexOf(p.papel);
+    L.sort((a,b)=>(a.papel==="pendente"?-1:0)-(b.papel==="pendente"?-1:0) || ord(a)-ord(b) || (a.nome||"").localeCompare(b.nome||""));
+    const celOpts = sel => `<option value="">-</option>` + celulas().map(([c,n])=>`<option value="${c}"${c===sel?" selected":""} title="${esc(n)}">${c}</option>`).join("");
+    $("us-lista").innerHTML = `<div class="tw"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Célula</th><th>Cargo</th><th>Ativo</th><th></th></tr></thead><tbody>${L.map(p=>`<tr${p.papel==="pendente"?' style="background:var(--sel)"':""}>
       <td><input data-unome="${esc(p.id)}" value="${esc(p.nome)}" maxlength="60" aria-label="nome"></td><td class="muted">${esc(p.email)}</td>
-      <td><select data-upapel="${esc(p.id)}" aria-label="papel" style="width:auto">${["admin","tecnico","operador","leitura"].map(x=>`<option value="${x}"${x===p.papel?" selected":""}>${papelNome(x)}</option>`).join("")}</select></td>
+      <td><select data-upapel="${esc(p.id)}" aria-label="papel" style="width:auto"${p.id===ME.id?" disabled":""}>${PAPEIS.map(x=>`<option value="${x}"${x===p.papel?" selected":""}>${papelNome(x)}</option>`).join("")}</select></td>
+      <td><select data-ucel="${esc(p.id)}" aria-label="célula" style="width:auto">${celOpts(p.celula)}</select></td>
+      <td><input data-ucargo="${esc(p.id)}" value="${esc(p.cargo)}" maxlength="60" aria-label="cargo" placeholder="ex.: técnico SMD"></td>
       <td><input type="checkbox" data-uativo="${esc(p.id)}"${p.ativo?" checked":""} style="width:auto" aria-label="ativo"${p.id===ME.id?" disabled":""}></td>
-      <td><button class="lk" type="button" data-usave="${esc(p.id)}">salvar</button></td></tr>`).join("")}</tbody></table></div>`;
+      <td><button class="lk" type="button" data-usave="${esc(p.id)}">salvar</button></td></tr>`).join("")}</tbody></table></div>
+      <p class="hint">Responsável registra na própria célula e onde tiver habilidade 2 ou mais (aba EQUIPE). Auxiliar registra só na célula da escala do dia. A célula principal define a tela inicial de cada um.</p>`;
   }
 }
 
@@ -592,19 +625,46 @@ function fillDatalist(){
 
 /* ---------------- navegação ---------------- */
 const VIEWS_P = () => (window.PROD ? PROD.views : []);
-const VIEWS = () => UI.area==="prod" ? VIEWS_P() : VIEWS_MAN;
-const ALL_VIEWS = () => [...VIEWS_MAN, ...VIEWS_P(), ["ficha"], ["p-op"]];
+const VIEWS_VENDAS = [["p-painel","PAINEL"],["p-ordens","ORDENS"],["config","CONTA"]];
+function VIEWS(){
+  if (!ME || temPapel("painel","pendente")) return [];
+  if (ME.papel==="vendas") return VIEWS_VENDAS;
+  return UI.area==="prod" ? VIEWS_P() : VIEWS_MAN;
+}
+function ALL_VIEWS(){
+  if (!ME) return [];
+  if (ME.papel==="painel") return [["hall"]];
+  if (ME.papel==="pendente") return [["pendente"]];
+  if (ME.papel==="vendas") return [...VIEWS_VENDAS, ["p-op"], ["hall"]];
+  return [...VIEWS_MAN, ...VIEWS_P(), ["ficha"], ["p-op"], ["hall"]];
+}
+/* tela inicial: pela célula principal (ou a da escala, para auxiliar) */
+function landing(){
+  const p = ME.papel, c = celulaHoje();
+  if (p==="painel") return "hall";
+  if (p==="pendente") return "pendente";
+  if (p==="vendas") return "p-ordens";
+  if (p==="engenharia") return "conhecimento";
+  if (p==="admin" || p==="diretoria") return "p-painel";
+  if (c==="MAN") return "painel";
+  if (c==="MONT" || c==="INT") return "p-posto";
+  if (["SMD","USI","SER"].includes(c)) return "p-celulas";
+  return "p-painel";
+}
 function renderNav(){
-  const areas = `<span class="area"><button type="button" data-area="man" class="${UI.area==="man"?"on":""}"><span class="k">[M]</span>MANUTENÇÃO</button><button type="button" data-area="prod" class="${UI.area==="prod"?"on":""}"><span class="k">[P]</span>PRODUÇÃO</button></span>`;
-  const lg = document.querySelector(".logo"); if (lg && lg.firstChild) lg.firstChild.nodeValue = UI.area==="prod" ? "3V3://PRODUÇÃO" : "3V3://MANUTENÇÃO";
+  const areas = veMan() ? `<span class="area"><button type="button" data-area="man" class="${UI.area==="man"?"on":""}"><span class="k">[M]</span>MANUTENÇÃO</button><button type="button" data-area="prod" class="${UI.area==="prod"?"on":""}"><span class="k">[P]</span>PRODUÇÃO</button></span>` : "";
+  const lg = document.querySelector(".logo"); if (lg && lg.firstChild) lg.firstChild.nodeValue = UI.view==="hall" ? "3V3://FÁBRICA" : (UI.area==="prod" || !veMan()) ? "3V3://PRODUÇÃO" : "3V3://MANUTENÇÃO";
   $("nav").innerHTML = areas + VIEWS().map(([k,l],i)=>`<button type="button" data-v="${k}"><span class="k">[${i+1}]</span>${l}</button>`).join("");
 }
 function go(v, opt={}){
+  if (ME && !ALL_VIEWS().some(x=>x[0]===v)) v = landing();
   if (v==="ficha"){ if (opt.id){ if (UI.ficha!==opt.id) UI.fichaDirty=false; UI.ficha = opt.id; } }
-  const area = v.startsWith("p-") ? "prod" : "man";
-  if (area!==UI.area || !$("nav").children.length){ UI.area = area; renderNav(); }
+  const area = v.startsWith("p-") ? "prod" : (v==="hall" ? UI.area : "man");
+  const navHall = (v==="hall") !== (UI.view==="hall");
+  if (area!==UI.area || navHall || !$("nav").children.length){ UI.area = area; UI.view = v; renderNav(); }
   UI.view = v;
   document.querySelectorAll(".view").forEach(s=>s.hidden = s.id!=="v-"+v);
+  document.body.classList.toggle("hall-on", v==="hall");
   const pai = v==="ficha" ? "placas" : (v==="p-op" ? "p-ordens" : v);
   $("nav").querySelectorAll("button[data-v]").forEach(b=>b.setAttribute("aria-current", b.dataset.v===pai ? "page" : "false"));
   try { history.replaceState(null,"", "#"+pai); } catch(e){}
@@ -649,8 +709,8 @@ document.addEventListener("keydown", e=>{
   if (["input","textarea","select"].includes(tag) || e.ctrlKey || e.metaKey || e.altKey || document.body.classList.contains("out")) return;
   const V = VIEWS();
   if (/^[1-9]$/.test(e.key) && V[+e.key-1]){ go(V[+e.key-1][0]); }
-  else if (e.key==="m"||e.key==="M"){ go("painel"); }
-  else if (e.key==="p"||e.key==="P"){ go("p-painel"); }
+  else if ((e.key==="m"||e.key==="M") && veMan()){ go("painel"); }
+  else if ((e.key==="p"||e.key==="P") && veMan()){ go("p-painel"); }
   else if (e.key==="n"||e.key==="N"){ e.preventDefault(); if (!UI.ro){ go("diario"); $("di-placa").focus(); } }
 });
 
@@ -918,6 +978,27 @@ const HASH0 = location.hash || "";
 
 function setDb(state, txt){ $("hdr-dot").className = "dot "+state; $("hdr-db").textContent = txt; }
 function setRO(on, msg, bad){ UI.ro = on; document.body.classList.toggle("ro", on); $("banner").innerHTML = msg ? `<div class="banner${bad?" bad":""}">${esc(msg)}</div>` : ""; render(); }
+/* liga e desliga os formulários conforme papel, célula, habilidade e escala do dia */
+let permSig = "";
+function aplicarPermissoes(){
+  if (!ME) return;
+  const p = ME.papel, B = document.body.classList;
+  B.toggle("adm", p==="admin");
+  B.toggle("can-con", temPapel("admin","responsavel","auxiliar","engenharia"));
+  B.toggle("can-mat", interno());
+  B.toggle("prod-w", temPapel("admin","responsavel") && (podeReg("MONT") || podeReg("INT")));
+  B.toggle("sem-man", !veMan());
+  B.toggle("kiosk", p==="painel");
+  const cel = celulaHoje();
+  $("hdr-me").innerHTML = `${esc(ME.nome||ME.email)} <small>[${esc(papelNome(p))}${cel?" · "+esc(cel):""}]</small>`;
+  let msg = "", bad = false;
+  if (p==="diretoria") msg = "Diretoria: você acompanha produção e manutenção sem registrar.";
+  else if (p==="engenharia") msg = "Engenharia: você consulta tudo e registra na base de CONHECIMENTO.";
+  else if (p==="auxiliar" && !cel){ msg = "Você ainda não está na escala de hoje. Peça ao gestor para definir sua célula em PRODUÇÃO > EQUIPE."; bad = true; }
+  const sig = [p, cel, podeReg("MAN"), B.contains("prod-w"), msg].join("|");
+  if (sig===permSig) return; permSig = sig;
+  setRO(!podeReg("MAN"), msg, bad);
+}
 function showView(v){ document.querySelectorAll(".view").forEach(s=>s.hidden = s.id!=="v-"+v); }
 function baixar(nome, texto, mime){
   const b = new Blob([texto], {type: mime+";charset=utf-8"}); const a = document.createElement("a");
@@ -926,16 +1007,21 @@ function baixar(nome, texto, mime){
 }
 
 /* ---------------- carga de dados (Supabase) ---------------- */
-const TABELAS = ["placas","diario","materiais","conhecimento","relatorios","config","profiles"];   // boot() acrescenta as da produção
+const TABELAS = ["celulas","habilidades","escala","placas","diario","materiais","conhecimento","relatorios","config","profiles"];   // boot() acrescenta as da produção
+const T_MAN = ["placas","diario","materiais","conhecimento","relatorios","habilidades","escala"];   // vendas não lê estas (RLS)
 const ORDEM = {placas:"id", diario:"criado_em", materiais:"criado_em", conhecimento:"criado_em", relatorios:"quinzena", config:"id", profiles:"criado_em",
-  prod_roteiros:"seq", prod_ordens:"id", prod_unidades:"criado_em", prod_eventos:"criado_em", prod_nc:"criado_em"};
-const JANELA_DIAS = {prod_unidades:240, prod_eventos:240};   // produção antiga fica no banco, mas não é carregada
+  celulas:"ordem", habilidades:"pessoa", escala:"data",
+  prod_roteiros:"seq", prod_ordens:"id", prod_unidades:"criado_em", prod_eventos:"criado_em", prod_nc:"criado_em",
+  prod_lotes_smd:"criado_em", prod_of:"criado_em", apontamentos:"data"};
+// histórico antigo fica no banco, mas não é carregado: [coluna, dias]
+const JANELA_DIAS = {prod_unidades:["criado_em",240], prod_eventos:["criado_em",240], escala:["data",60], apontamentos:["data",180]};
 const clean = r => { const o = {}; for (const k in r) o[k] = r[k]===null ? "" : r[k]; return o; };
 async function fetchAll(t){
   const out = [];
   for (let from=0;; from+=1000){
     let q = sb.from(t).select("*");
-    if (JANELA_DIAS[t]) q = q.gte("criado_em", new Date(Date.now()-JANELA_DIAS[t]*864e5).toISOString());
+    const J = JANELA_DIAS[t];
+    if (J) q = q.gte(J[0], J[0]==="data" ? addDays(today(), -J[1]) : new Date(Date.now()-J[1]*864e5).toISOString());
     const {data, error} = await q.order(ORDEM[t]).range(from, from+999);
     if (error) throw error;
     out.push(...data); if (data.length < 1000) break;
@@ -951,12 +1037,14 @@ async function loadTable(t){
     else if (t==="conhecimento") S.conhecimento = rows.map(r=>({...clean(r), _id:r.id, desc:r.descricao||""}));
     else if (t==="relatorios"){ const o={}; rows.forEach(r=>o[r.quinzena]=clean(r)); S.relat=o; }
     else if (t==="config"){ const c = rows[0]||{}; S.config = {tecnico:c.tecnico||"", alerta:c.alerta||3, meta_dia:+c.meta_dia||0, catalogo:Array.isArray(c.catalogo)?c.catalogo:null}; fillStaticSelects(); UI.cfgFilled=false; }
+    else if (t==="celulas") S.celulas = rows.map(clean);
+    else if (t==="habilidades" || t==="escala"){ if (t==="habilidades") S.habil = rows.map(r=>({...r, nivel:+r.nivel})); else S.escala = rows.map(clean); aplicarPermissoes(); }
     else if (window.PROD && PROD.tables.includes(t)) PROD.load(t, rows);
     else if (t==="profiles"){
       for (const k in PROFILES) delete PROFILES[k];
       rows.forEach(r=>PROFILES[r.id]=clean(r));
       const p = ME && PROFILES[ME.id];
-      if (p && (p.papel!==ME.papel || p.ativo!==ME.ativo)){ toast("Seu acesso mudou. Recarregando..."); setTimeout(()=>location.reload(), 1200); return; }
+      if (p && (p.papel!==ME.papel || p.ativo!==ME.ativo || (p.celula||"")!==(ME.celula||""))){ toast("Seu acesso mudou. Recarregando..."); setTimeout(()=>location.reload(), 1200); return; }
     }
     S.ready[t] = 1; render();
   } catch(e){ console.error(t, e); toast("Erro ao carregar "+t+": "+errMsg(e), true); }
@@ -996,7 +1084,8 @@ $("f-minha").addEventListener("submit", async e=>{
 $("btn-sair").addEventListener("click", async ()=>{ await sb.auth.signOut(); try { history.replaceState(null, "", location.pathname); } catch(_){} location.reload(); });
 async function salvarUsuario(id){
   const q = s => document.querySelector(`[data-${s}="${id}"]`);
-  const upd = {nome:q("unome").value.trim(), papel:q("upapel").value, ativo:q("uativo").checked};
+  const upd = {nome:q("unome").value.trim(), papel:q("upapel").value, ativo:q("uativo").checked, celula:nz(q("ucel").value), cargo:nz(q("ucargo").value.trim())};
+  if (upd.papel==="responsavel" && !upd.celula){ toast("Responsável precisa de uma célula principal.", true); return; }
   await write(()=>sb.from("profiles").update(upd).eq("id", id), "Usuário atualizado.", ["profiles"]);
 }
 
@@ -1012,21 +1101,24 @@ async function iniciar(session){
   }
   if (!p.ativo){ iniciado = false; await sb.auth.signOut(); telaLogin("!! Seu acesso está desativado. Fale com o administrador."); return; }
   ME = clean(p);
-  document.body.classList.remove("out"); document.body.classList.toggle("adm", p.papel==="admin");
-  document.body.classList.toggle("prod-w", p.papel==="admin" || p.papel==="operador");
-  $("hdr-me").innerHTML = `${esc(p.nome||p.email)} <small>[${esc(papelNome(p.papel))}]</small>`;
-  if (p.papel==="leitura") setRO(true, "Modo leitura: você vê tudo, mas não registra. Para registrar, peça ao administrador o papel de técnico ou operador.");
-  else if (p.papel==="operador") setRO(true, "");
-  else setRO(false);
+  document.body.classList.remove("out");
+  aplicarPermissoes();
   const hsh = HASH0.slice(1);
-  go(ALL_VIEWS().some(v=>v[0]===hsh) ? hsh : (p.papel==="operador" ? "p-posto" : "painel"));
+  if (temPapel("painel","pendente")){ setDb("on", p.papel==="painel" ? "painel" : "aguardando"); go(landing()); return; }   // não leem tabelas
   setDb("", "carregando");
-  await Promise.all(TABELAS.map(loadTable));
+  // escala, habilidades e células primeiro: definem o que a pessoa registra e onde ela começa
+  const base = ["celulas","habilidades","escala"].filter(t=>veMan() || t==="celulas");
+  await Promise.all(base.map(loadTable));
+  aplicarPermissoes();
+  go(ALL_VIEWS().some(v=>v[0]===hsh) ? hsh : landing());
+  const tabs = TABELAS.filter(t=>!["celulas","habilidades","escala"].includes(t) && (veMan() || !T_MAN.includes(t)) && (veMan() || t!=="prod_nc" && t!=="apontamentos"));
+  await Promise.all(tabs.map(loadTable));
+  const vivas = new Set([...base, ...tabs]);
   sb.channel("mudancas")
-    .on("postgres_changes", {event:"*", schema:"public"}, pl=>{ if (TABELAS.includes(pl.table)) queueReload(pl.table); })
+    .on("postgres_changes", {event:"*", schema:"public"}, pl=>{ if (vivas.has(pl.table)) queueReload(pl.table); })
     .subscribe(st=>{ if (st==="SUBSCRIBED") setDb("on","online"); else if (["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(st)) setDb("off","sem tempo real"); });
-  setInterval(()=>TABELAS.forEach(t=>queueReload(t, 0)), 120000);
-  window.addEventListener("focus", ()=>TABELAS.forEach(t=>queueReload(t, 200)));
+  setInterval(()=>vivas.forEach(t=>queueReload(t, 0)), 120000);
+  window.addEventListener("focus", ()=>vivas.forEach(t=>queueReload(t, 200)));
 }
 
 async function boot(){

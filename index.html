@@ -163,7 +163,7 @@
 
 <!-- MATERIAIS -->
 <section class="view" id="v-materiais" hidden>
-  <div class="box w-only"><h2>Novo pedido</h2>
+  <div class="box w-mat"><h2>Novo pedido</h2>
     <form id="f-mat" autocomplete="off">
       <label class="w2"><span>Item / componente <span class="req">*</span></span><input id="ma-item" name="item" required maxlength="120"></label>
       <label>Especificação / código<input id="ma-spec" name="spec" maxlength="120"></label>
@@ -183,7 +183,7 @@
 
 <!-- CONHECIMENTO -->
 <section class="view" id="v-conhecimento" hidden>
-  <div class="box w-only"><h2>Registrar conhecimento</h2>
+  <div class="box w-con"><h2>Registrar conhecimento</h2>
     <form id="f-con" autocomplete="off">
       <label><span>Tipo <span class="req">*</span></span><select id="co-tipo" name="tipo" required></select></label>
       <label class="w2"><span>Título (curto) <span class="req">*</span></span><input id="co-tit" name="titulo" required maxlength="120"></label>
@@ -242,12 +242,12 @@
       <div class="row wide sp"><button class="btn" type="submit">Salvar</button><button class="lk" type="button" id="cf-restaurar">restaurar catálogo oficial 2026.1</button></div>
     </form>
   </div>
-  <div class="box"><h2>Como usar</h2>
+  <div class="box man-only"><h2>Como usar</h2>
     <p class="prompt">Chegou placa: <b>[2] Placas</b>, cadastre. O banco gera o ID (MP-0001...).</p>
     <p class="prompt">Trabalhou: <b>[3] Diário</b>, uma linha por sessão. O status da placa vem daqui.</p>
     <p class="prompt">Fechou o diagnóstico: abra a ficha e marque defeito e causa.</p>
     <p class="prompt">Trabalho sem placa (bancada, POP, treino): placa <b>GERAL</b>.</p>
-    <p class="prompt">Papéis: <b>Técnico</b> registra a manutenção; <b>Operador</b> registra a produção; <b>Leitura</b> só consulta; <b>Admin</b> faz tudo e gerencia usuários.</p>
+    <p class="prompt">Papéis: <b>Gestor</b> faz tudo, define a escala e as habilidades; <b>Responsável</b> registra na própria célula e onde tem habilidade 2 ou mais; <b>Auxiliar</b> registra na célula da escala do dia; <b>Diretoria</b> e <b>Engenharia</b> consultam (engenharia escreve no Conhecimento); <b>Vendas</b> acompanha ordens e pedidos; <b>Painel do hall</b> é a conta da TV.</p>
     <p class="prompt">Áreas: tecla <kbd>M</kbd> manutenção, <kbd>P</kbd> produção.</p>
     <p class="prompt">Atalhos fora de campos: <kbd>1</kbd>…<kbd>8</kbd> trocam de aba, <kbd>N</kbd> abre novo registro.</p>
   </div>
@@ -257,14 +257,14 @@
     <p class="muted">Carrega 12 placas fictícias (IDs EX-01 a EX-12), com histórico, pedidos e conhecimento, para treinar o técnico. Tudo marcado como exemplo e removível com um clique.</p>
     <div class="row"><button class="btn sec" type="button" id="ex-load">Carregar exemplos</button><button class="btn danger" type="button" id="ex-del">Apagar exemplos</button><span class="hint" id="ex-msg"></span></div>
   </div>
-  <div class="box"><h2>Exportar (backup)</h2>
+  <div class="box man-only"><h2>Exportar (backup)</h2>
     <p class="muted">Planilhas CSV para abrir no Excel. Faça um backup por quinzena.</p>
     <div class="row" id="exp-btns"></div><span class="hint" id="exp-msg"></span>
   </div>
   </div>
   <div class="grid2">
   <div class="box adm-only"><h2>Usuários <small>papel e acesso</small></h2>
-    <p class="muted">Para adicionar alguém: Supabase &gt; Authentication &gt; Users &gt; Invite user. A pessoa recebe um e-mail, define a senha e entra como <b>Leitura</b>. Depois mude o papel aqui.</p>
+    <p class="muted">Para adicionar alguém: Supabase &gt; Authentication &gt; Users &gt; Invite user. A pessoa recebe um e-mail, define a senha e entra como <b>Pendente</b> (sem acesso). Depois defina papel, célula e cargo aqui.</p>
     <div id="us-lista"></div>
   </div>
   <div class="box"><h2>Minha conta</h2>
@@ -298,6 +298,8 @@
       <label class="w2"><span>Produto <span class="req">*</span></span><select id="op-produto" required></select></label>
       <label><span>Quantidade <span class="req">*</span></span><input type="number" id="op-qtd" min="1" max="500" step="1" value="10" required></label>
       <label>Lote<input id="op-lote" maxlength="40" placeholder="ex.: L43-01"></label>
+      <label>Pedido<input id="op-pedido" maxlength="40" placeholder="nº do pedido de venda"></label>
+      <label>Cliente<input id="op-cliente" maxlength="80"></label>
       <label>Previsto para<input type="date" id="op-prev"></label>
       <label>Prioridade<select id="op-prio"></select></label>
       <label class="wide">Séries (opcional: uma por linha; vazio gera OP-xxxx-001, 002...)<textarea id="op-series" rows="3" maxlength="20000"></textarea></label>
@@ -307,7 +309,7 @@
     </form>
   </div>
   <div class="box"><h2>Ordens de produção</h2>
-    <div class="filters"><div class="chips" id="op-filt"></div></div>
+    <div class="filters"><div class="chips" id="op-filt"></div><input id="op-busca" type="search" placeholder="buscar OP, produto, pedido, cliente..."></div>
     <div id="op-lista"></div>
   </div>
 </section>
@@ -345,7 +347,7 @@
 </section>
 
 <section class="view" id="v-p-nc" hidden>
-  <div class="box"><h2>Não conformidades da linha <small>cada uma abre uma placa na manutenção</small></h2>
+  <div class="box"><h2>Não conformidades da linha <small>cada uma abre uma placa na manutenção · a do auxiliar espera confirmação</small></h2>
     <div class="filters"><div class="chips" id="nc-filt"></div></div>
     <div id="nc-lista"></div>
   </div>
@@ -355,6 +357,88 @@
   <div class="box"><h2>Tempos medidos x tempo padrão <small>por produto e posto</small></h2>
     <div id="tp-body"></div>
     <div class="row" style="margin-top:10px"><button class="btn sec" type="button" id="tp-exp">Exportar passagens (.csv)</button></div>
+  </div>
+</section>
+<section class="view" id="v-p-celulas" hidden>
+  <div class="box"><h2>Células <small>fila e registro de cada uma</small></h2>
+    <div class="chips" id="ce-chips"></div>
+    <div id="ce-info" class="muted" style="margin-top:8px"></div>
+  </div>
+  <div class="box" id="ce-smd-form-box"><h2>Novo lote SMD</h2>
+    <form id="f-lote" autocomplete="off">
+      <label class="w2"><span>Produto <span class="req">*</span></span><select id="ls-produto" required></select></label>
+      <label>Placa (PCB)<input id="ls-pcb" list="dl-versoes" maxlength="40"></label>
+      <label><span>Quantidade <span class="req">*</span></span><input type="number" id="ls-qtd" min="1" max="5000" step="1" value="10" required></label>
+      <label>OP<select id="ls-op"></select></label>
+      <label>Previsto para<input type="date" id="ls-prev"></label>
+      <label class="w2">Observação<input id="ls-obs" maxlength="200"></label>
+      <div class="err" id="ls-err"></div>
+      <div class="row wide"><button class="btn" type="submit">Abrir lote</button></div>
+    </form>
+  </div>
+  <div class="box" id="ce-of-form-box"><h2 id="of-title">Nova ordem de fabricação</h2>
+    <form id="f-of" autocomplete="off">
+      <label class="w2"><span>Item / peça <span class="req">*</span></span><input id="of-item" required maxlength="120" placeholder="ex.: caixa do quadro, suporte da bomba"></label>
+      <label><span>Quantidade <span class="req">*</span></span><input type="number" id="of-qtd" min="1" max="5000" step="1" value="1" required></label>
+      <label>OP<select id="of-op"></select></label>
+      <label>Previsto para<input type="date" id="of-prev"></label>
+      <label>Prioridade<select id="of-prio"></select></label>
+      <label class="w2">Observação / desenho<input id="of-obs" maxlength="200"></label>
+      <div class="err" id="of-err"></div>
+      <div class="row wide"><button class="btn" type="submit">Abrir OF</button></div>
+    </form>
+  </div>
+  <div class="box"><h2 id="ce-fila-t">Fila</h2><div id="ce-fila"></div></div>
+  <div class="grid2">
+    <div class="box" id="ce-ap-box"><h2>Apontar horas</h2>
+      <form id="f-apont" autocomplete="off">
+        <label><span>Data <span class="req">*</span></span><input type="date" id="ap-data" required></label>
+        <label><span>Atividade <span class="req">*</span></span><select id="ap-ativ" required></select></label>
+        <label><span>Horas <span class="req">*</span></span><input type="number" id="ap-horas" min="0.25" max="12" step="0.25" required inputmode="decimal"></label>
+        <label>Ref. (OP, LS, OF)<input id="ap-ref" list="dl-refs" maxlength="40" style="text-transform:uppercase"></label>
+        <label>Qtd feita<input type="number" id="ap-qtd" min="0" step="1"></label>
+        <label class="w2">Observação<input id="ap-obs" maxlength="200"></label>
+        <div class="err" id="ap-err"></div>
+        <div class="row wide"><button class="btn" type="submit">Apontar</button></div>
+      </form>
+      <datalist id="dl-refs"></datalist>
+    </div>
+    <div class="box"><h2>Horas da célula <small>últimos 7 dias</small></h2><div id="ce-horas"></div></div>
+  </div>
+  <div class="box"><h2>Apontamentos <small>últimos 30 dias</small></h2><div id="ce-apont"></div></div>
+</section>
+
+<section class="view" id="v-p-equipe" hidden>
+  <div class="box"><h2>Escala do dia <small>onde cada um registra</small></h2>
+    <div class="filters"><label style="flex-direction:row;align-items:center;gap:8px">Dia<input type="date" id="eq-dia" style="width:auto"></label><span class="hint" id="eq-hint"></span></div>
+    <div id="eq-escala"></div>
+  </div>
+  <div class="box"><h2>Matriz de habilidades <small>0 não faz · 1 em treinamento · 2 faz sozinho · 3 domina · 4 ensina</small></h2>
+    <div id="eq-hab"></div>
+    <p class="hint">Responsável com nível 2 ou mais numa célula também registra nela. A matriz mostra quem cobre quem nas faltas.</p>
+  </div>
+  <div class="grid2">
+    <div class="box"><h2>Integração no P8 <small>leve (MONT) ou robusta (INT)</small></h2><div id="eq-p8"></div></div>
+    <div class="box"><h2>Painel do hall</h2>
+      <p class="muted">Tela da TV com números agregados, sem nomes, clientes ou séries. Crie uma conta só para a TV com o papel <b>painel do hall</b>: ela abre direto nesta tela e atualiza a cada minuto.</p>
+      <div class="row"><button class="btn sec" type="button" data-go="hall">Abrir painel do hall</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="v-hall" hidden>
+  <div class="hall-top"><span id="hl-data"></span><span id="hl-upd" class="muted"></span></div>
+  <div class="hall-kpis" id="hl-kpis"></div>
+  <div class="grid2">
+    <div class="box"><h2>Concluídas por dia <small>últimos 14 dias</small></h2><div id="hl-dias"></div></div>
+    <div class="box"><h2>Células</h2><div id="hl-cel"></div></div>
+  </div>
+</section>
+
+<section class="view" id="v-pendente" hidden>
+  <div class="box auth"><h2>Acesso pendente</h2>
+    <p>Sua conta foi criada e está aguardando liberação.</p>
+    <p class="muted">Avise o gestor do setor para definir seu papel e sua célula. Depois disso, é só entrar de novo.</p>
   </div>
 </section>
 <div id="toast" hidden></div>
