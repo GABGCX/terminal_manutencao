@@ -1,7 +1,8 @@
 /* Layout: terminal de bancada, uma coluna, cabeçalho fixo com abas numeradas; caixas ASCII com título na borda. */:root{
-  --bg:#0f1311; --panel:#141a17; --fg:#d8d6c8; --dim:#7f8a80; --line:#2f3a33;
-  --accent:#f0a83a; --accent-ink:#0f1311; --ok:#7fd18b; --warn:#e9c45a; --bad:#ff7a66; --info:#7cc4d8;
-  --sel:#23302a;
+  /* tema escuro: paleta neon (#0a0a1a, #1a1a3d, #00ffff, #00ff7f, #7fffd4) */
+  --bg:#0a0a1a; --panel:#1a1a3d; --fg:#dcf4f2; --dim:#8389b8; --line:#2c2c62;
+  --accent:#00ffff; --accent-ink:#0a0a1a; --ok:#00ff7f; --warn:#ffd166; --bad:#ff6b8b; --info:#7fffd4;
+  --sel:#22224f;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
   --crt:"VT323","IBM Plex Mono",ui-monospace,monospace;
   color-scheme:dark;
