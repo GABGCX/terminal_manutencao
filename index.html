@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Terminal Manutenção 3V3</title>
+<meta name="description" content="Gestão e diário de bordo da manutenção de placas eletrônicas da 3V3 Tecnologia.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230f1311'/%3E%3Ctext x='2' y='12' font-family='monospace' font-size='11' fill='%23f0a83a'%3E%3E_%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=VT323&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js" defer></script>
+</head>
+<body class="out">
+<div class="wrap">
+<header>
+  <div class="top">
+    <div class="logo">3V3://MANUTENÇÃO<span class="cur" aria-hidden="true"></span></div>
+    <div class="meta">
+      <span id="hdr-user"><span class="userchip" id="hdr-me">-</span> <button class="lk" type="button" id="btn-sair">sair</button></span>
+      <span class="on-only">setor <b id="hdr-tec">-</b></span>
+      <span id="hdr-clock">-</span>
+      <span><span id="hdr-dot" class="dot">●</span> <span id="hdr-db">conectando</span></span>
+    </div>
+  </div>
+  <nav id="nav" aria-label="Seções"></nav>
+</header>
+<div id="banner"></div>
+
+<!-- LOGIN -->
+<section class="view" id="v-login" hidden>
+  <div class="box auth"><h2>Entrar</h2>
+    <form id="f-login" autocomplete="on">
+      <label>E-mail<input type="email" id="lg-email" name="email" required autocomplete="username"></label>
+      <label>Senha<input type="password" id="lg-senha" name="senha" required autocomplete="current-password"></label>
+      <div class="err" id="lg-err"></div>
+      <div class="row sp"><button class="btn" type="submit">Entrar</button><button class="lk" type="button" id="lg-esqueci">esqueci minha senha</button></div>
+    </form>
+    <p class="hint">Acesso só por convite. Peça ao administrador do setor.</p>
+  </div>
+</section>
+<section class="view" id="v-senha" hidden>
+  <div class="box auth"><h2>Definir senha</h2>
+    <form id="f-senha" autocomplete="on">
+      <label>Nova senha (mínimo 8 caracteres)<input type="password" id="ns-1" required minlength="8" autocomplete="new-password"></label>
+      <label>Repita a senha<input type="password" id="ns-2" required minlength="8" autocomplete="new-password"></label>
+      <div class="err" id="ns-err"></div>
+      <div class="row"><button class="btn" type="submit">Salvar senha</button></div>
+    </form>
+  </div>
+</section>
+
+
+<!-- PAINEL -->
+<section class="view" id="v-painel">
+  <div class="box"><h2>Situação agora</h2><div class="kpis" id="p-kpis"></div></div>
+  <div class="box"><h2>Fila de trabalho <small>por prioridade e entrada · clique para abrir a ficha</small></h2><div id="p-fila"></div></div>
+  <div class="grid2">
+    <div class="box"><h2>Últimos registros</h2><div id="p-ultimos"></div></div>
+    <div class="box"><h2>Materiais pendentes</h2><div id="p-mat"></div></div>
+  </div>
+</section>
+
+<!-- PLACAS -->
+<section class="view" id="v-placas" hidden>
+  <div class="box w-only"><h2>Nova placa <small id="pl-next"></small></h2>
+    <form id="f-placa" autocomplete="off">
+      <label><span>Data de entrada <span class="req">*</span></span><input type="date" id="pl-entrada" name="entrada" required></label>
+      <label><span>Produto <span class="req">*</span></span><select id="pl-produto" name="produto" required></select></label>
+      <label>Versão / revisão<input id="pl-versao" name="versao" list="dl-versoes" maxlength="40" placeholder="ex.: v1.2 ou não identificada"></label>
+      <label><span>Origem <span class="req">*</span></span><select id="pl-origem" name="origem" required></select></label>
+      <label>Prioridade<select id="pl-prio" name="prio"></select></label>
+      <label class="w2" id="pl-rel-l"><span>Defeito relatado <span class="req">*</span></span><input id="pl-relatado" name="relatado" required maxlength="200" placeholder="ex.: reprovada na JIGA (P4)"></label>
+      <label>Nº série / identificação<input id="pl-serie" name="serie" maxlength="60"></label>
+      <label>Ref. origem (NC, OS, cliente)<input id="pl-ref" name="ref" maxlength="80"></label>
+      <div class="err" id="pl-err"></div>
+      <div class="row wide"><button class="btn" type="submit">Cadastrar placa</button><span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> salva. Escreva o ID na placa ou no saquinho.</span></div>
+    </form>
+  </div>
+  <div class="box"><h2>Placas</h2>
+    <div class="filters">
+      <div class="chips" id="pl-filt"></div>
+      <select id="pl-linha" style="width:auto;max-width:220px" aria-label="linha"></select>
+      <input id="pl-busca" type="search" placeholder="buscar ID, produto, versão, defeito...">
+    </div>
+    <div id="pl-lista"></div>
+  </div>
+</section>
+
+<!-- FICHA -->
+<section class="view" id="v-ficha" hidden>
+  <div class="box"><h2>Ficha da placa</h2>
+    <div class="row sp"><div class="row"><span class="big" id="fi-id">-</span><span id="fi-st"></span></div>
+      <div class="row"><button class="btn w-only" id="fi-reg" type="button">+ Registrar sessão</button><button class="btn sec" type="button" data-go="placas">Voltar</button></div></div>
+    <dl class="kv" id="fi-kv" style="margin-top:14px"></dl>
+  </div>
+  <div class="grid2">
+    <div class="box"><h2>Histórico <small id="fi-hcount"></small></h2><ul class="tl" id="fi-tl"></ul></div>
+    <div class="box w-only"><h2>Cadastro e conclusão</h2>
+      <form id="f-ficha" autocomplete="off">
+        <label>Versão / revisão<input id="fi-versao" name="versao" list="dl-versoes" maxlength="40"></label>
+        <label>Defeito constatado<select id="fi-defeito" name="defeito"></select></label>
+        <label>Causa provável<select id="fi-causa" name="causa"></select></label>
+        <label class="wide">Componentes substituídos<input id="fi-comp" name="componentes" maxlength="160"></label>
+        <label class="wide">Destino / observação final<input id="fi-destino" name="destino" maxlength="160"></label>
+        <details class="more"><summary>dados de entrada</summary><div>
+          <label>Data de entrada<input type="date" id="fi-entrada" name="entrada"></label>
+          <label>Produto<select id="fi-produto" name="produto"></select></label>
+          <label>Origem<select id="fi-origem" name="origem"></select></label>
+          <label>Prioridade<select id="fi-prio" name="prio"></select></label>
+          <label class="wide">Defeito relatado<input id="fi-relatado" name="relatado" maxlength="200"></label>
+          <label>Nº série<input id="fi-serie" name="serie" maxlength="60"></label>
+          <label>Ref. origem<input id="fi-ref" name="ref" maxlength="80"></label>
+        </div></details>
+        <div class="err" id="fi-err"></div>
+        <div class="row wide sp"><button class="btn" type="submit">Salvar ficha</button><button class="lk del" type="button" id="fi-del">excluir placa</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="box"><h2>Materiais desta placa</h2><div id="fi-mat"></div></div>
+</section>
+
+<!-- DIÁRIO -->
+<section class="view" id="v-diario" hidden>
+  <div class="box w-only"><h2 id="di-title">Registrar sessão</h2>
+    <form id="f-diario" autocomplete="off">
+      <label><span>Data <span class="req">*</span></span><input type="date" id="di-data" name="data" required></label>
+      <label><span>Placa <span class="req">*</span></span><input id="di-placa" name="placa" list="dl-placas" required placeholder="MP-0001 ou GERAL" style="text-transform:uppercase"></label>
+      <label><span>Atividade <span class="req">*</span></span><select id="di-ativ" name="atividade" required></select></label>
+      <label><span>Horas <span class="req">*</span></span><input type="number" id="di-horas" name="horas" min="0.25" max="12" step="0.25" required inputmode="decimal">
+        <span class="quick" id="di-quick"></span></label>
+      <label class="wide"><span>O que foi feito / constatado <span class="req">*</span></span><input id="di-feito" name="feito" required maxlength="300"></label>
+      <label><span>Status após <span class="req" id="di-st-req">*</span></span><select id="di-status" name="status"></select></label>
+      <div class="muted" id="di-st-now" style="font-size:12px;align-self:center"></div>
+      <details class="more" id="di-more"><summary>complementar: teste, componente, impedimento, material, destaque</summary><div>
+        <label>Resultado do teste<select id="di-teste" name="teste"></select></label>
+        <label>Componente / ponto<input id="di-comp" name="componente" maxlength="80"></label>
+        <label>Impedimento<select id="di-imp" name="impedimento"></select></label>
+        <label>Material necessário<input id="di-mat" name="material" maxlength="120">
+          <span style="text-transform:none;letter-spacing:0;font-size:11px"><input type="checkbox" id="di-mat-ped" checked style="width:auto"> abrir pedido em Materiais</span></label>
+        <label>Destaque<select id="di-dest" name="destaque"></select></label>
+        <label class="w2">Observação<input id="di-obs" name="obs" maxlength="300"></label>
+      </div></details>
+      <div class="err" id="di-err"></div>
+      <div class="row wide"><button class="btn" type="submit" id="di-save">Registrar</button><button class="btn sec" type="button" id="di-cancel" hidden>Cancelar edição</button>
+        <span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> salva. Data e placa ficam para o próximo registro.</span></div>
+    </form>
+  </div>
+  <div class="box"><h2>Diário de bordo</h2>
+    <div class="filters"><div class="chips" id="di-filt"></div><input id="di-busca" type="search" placeholder="filtrar por placa ou texto..."></div>
+    <div id="di-lista"></div>
+  </div>
+  <datalist id="dl-placas"></datalist>
+  <datalist id="dl-versoes"></datalist>
+</section>
+
+<!-- MATERIAIS -->
+<section class="view" id="v-materiais" hidden>
+  <div class="box w-only"><h2>Novo pedido</h2>
+    <form id="f-mat" autocomplete="off">
+      <label class="w2"><span>Item / componente <span class="req">*</span></span><input id="ma-item" name="item" required maxlength="120"></label>
+      <label>Especificação / código<input id="ma-spec" name="spec" maxlength="120"></label>
+      <label>Qtd<input type="number" id="ma-qtd" name="qtd" min="1" step="1" value="1"></label>
+      <label>Placa<input id="ma-placa" name="placa" list="dl-placas" placeholder="opcional" style="text-transform:uppercase"></label>
+      <label>Urgência<select id="ma-urg" name="urg"></select></label>
+      <label class="w2">Fornecedor / observação<input id="ma-obs" name="obs" maxlength="160"></label>
+      <div class="err" id="ma-err"></div>
+      <div class="row wide"><button class="btn" type="submit">Registrar pedido</button></div>
+    </form>
+  </div>
+  <div class="box"><h2>Materiais</h2>
+    <div class="filters"><div class="chips" id="ma-filt"></div></div>
+    <div id="ma-lista"></div>
+  </div>
+</section>
+
+<!-- CONHECIMENTO -->
+<section class="view" id="v-conhecimento" hidden>
+  <div class="box w-only"><h2>Registrar conhecimento</h2>
+    <form id="f-con" autocomplete="off">
+      <label><span>Tipo <span class="req">*</span></span><select id="co-tipo" name="tipo" required></select></label>
+      <label class="w2"><span>Título (curto) <span class="req">*</span></span><input id="co-tit" name="titulo" required maxlength="120"></label>
+      <label class="wide">O que foi observado<textarea id="co-desc" name="desc" maxlength="1000"></textarea></label>
+      <label>Placas relacionadas<input id="co-placas" name="placas" maxlength="120" placeholder="MP-0001; MP-0008"></label>
+      <label>Produto<select id="co-prod" name="produto"></select></label>
+      <label class="w2">Ação sugerida<input id="co-acao" name="acao" maxlength="200"></label>
+      <label>Responsável<input id="co-resp" name="resp" maxlength="60"></label>
+      <div class="err" id="co-err"></div>
+      <div class="row wide"><button class="btn" type="submit">Registrar</button></div>
+    </form>
+  </div>
+  <div class="box"><h2>Base de conhecimento <small>onde nascem os POPs</small></h2>
+    <div class="filters"><div class="chips" id="co-filt"></div></div>
+    <div id="co-lista"></div>
+  </div>
+</section>
+
+<!-- RELATÓRIO -->
+<section class="view" id="v-relatorio" hidden>
+  <div class="box"><h2>Relatório quinzenal</h2>
+    <div class="row sp">
+      <label style="max-width:320px;flex:1">Quinzena<select id="re-q"></select></label>
+      <div class="row"><button class="btn" type="button" id="re-copy">Copiar como texto</button><button class="btn sec" type="button" id="re-dl">Baixar .txt</button></div>
+    </div>
+    <div id="re-per" class="muted" style="margin-top:8px"></div>
+  </div>
+  <div id="re-body"></div>
+  <div class="box"><h2>Escrito à mão <small>salvo junto com a quinzena</small></h2>
+    <form id="f-rel" autocomplete="off">
+      <label class="wide">Comentário do técnico sobre a quinzena<textarea id="re-com" name="comentario" maxlength="2000"></textarea></label>
+      <label class="wide">Decisões ou apoio que precisamos da gestão<textarea id="re-dec" name="decisoes" maxlength="2000"></textarea></label>
+      <div class="row wide w-only"><button class="btn" type="submit">Salvar textos</button><span class="hint" id="re-saved"></span></div>
+    </form>
+  </div>
+  <div class="box"><h2>Prévia em texto</h2><pre class="txt" id="re-txt"></pre></div>
+</section>
+
+<!-- EVOLUÇÃO -->
+<section class="view" id="v-evolucao" hidden>
+  <div class="box"><h2>Evolução por quinzena</h2><div id="ev-body"></div>
+    <p class="hint">Abertas no fim = placas que tinham entrado até o fim da quinzena e ainda não tinham sido encerradas.</p></div>
+</section>
+
+<!-- CONFIG -->
+<section class="view" id="v-config" hidden>
+  <div class="grid2">
+  <div class="box adm-only"><h2>Configuração</h2>
+    <form id="f-cfg" autocomplete="off">
+      <label class="w2">Responsável pelo setor (vai no relatório)<input id="cf-tec" name="tecnico" maxlength="60"></label>
+      <label>Dias sem registro para alerta<input type="number" id="cf-alerta" name="alerta" min="1" max="60" step="1"></label>
+      <label class="wide">Catálogo de produtos: uma linha por produto, no formato  Produto ; Linha ; Tipo ; versões separadas por vírgula<textarea id="cf-cat" name="catalogo" rows="14" maxlength="12000" style="font-size:12px;white-space:pre;overflow-x:auto"></textarea></label>
+      <label class="wide" style="text-transform:none;letter-spacing:0"><span class="muted">O produto escolhido no cadastro puxa linha, tipo e as versões sugeridas. Placas já cadastradas não mudam.</span></label>
+      <div class="err" id="cf-err"></div>
+      <div class="row wide"><button class="btn" type="submit">Salvar</button></div>
+    </form>
+  </div>
+  <div class="box"><h2>Como usar</h2>
+    <p class="prompt">Chegou placa: <b>[2] Placas</b>, cadastre. O banco gera o ID (MP-0001...).</p>
+    <p class="prompt">Trabalhou: <b>[3] Diário</b>, uma linha por sessão. O status da placa vem daqui.</p>
+    <p class="prompt">Fechou o diagnóstico: abra a ficha e marque defeito e causa.</p>
+    <p class="prompt">Trabalho sem placa (bancada, POP, treino): placa <b>GERAL</b>.</p>
+    <p class="prompt">Papéis: <b>Técnico</b> registra; <b>Leitura</b> só consulta; <b>Admin</b> configura e gerencia usuários.</p>
+    <p class="prompt">Atalhos fora de campos: <kbd>1</kbd>…<kbd>8</kbd> trocam de aba, <kbd>N</kbd> abre novo registro.</p>
+  </div>
+  </div>
+  <div class="grid2">
+  <div class="box adm-only"><h2>Dados de exemplo</h2>
+    <p class="muted">Carrega 12 placas fictícias (IDs EX-01 a EX-12), com histórico, pedidos e conhecimento, para treinar o técnico. Tudo marcado como exemplo e removível com um clique.</p>
+    <div class="row"><button class="btn sec" type="button" id="ex-load">Carregar exemplos</button><button class="btn danger" type="button" id="ex-del">Apagar exemplos</button><span class="hint" id="ex-msg"></span></div>
+  </div>
+  <div class="box"><h2>Exportar (backup)</h2>
+    <p class="muted">Planilhas CSV para abrir no Excel. Faça um backup por quinzena.</p>
+    <div class="row" id="exp-btns"></div><span class="hint" id="exp-msg"></span>
+  </div>
+  </div>
+  <div class="grid2">
+  <div class="box adm-only"><h2>Usuários <small>papel e acesso</small></h2>
+    <p class="muted">Para adicionar alguém: Supabase &gt; Authentication &gt; Users &gt; Invite user. A pessoa recebe um e-mail, define a senha e entra como <b>Leitura</b>. Depois mude o papel aqui.</p>
+    <div id="us-lista"></div>
+  </div>
+  <div class="box"><h2>Minha conta</h2>
+    <p class="muted" id="mc-info"></p>
+    <form id="f-minha" autocomplete="off">
+      <label class="w2">Nova senha<input type="password" id="mc-senha" minlength="8" autocomplete="new-password"></label>
+      <div class="err" id="mc-err"></div>
+      <div class="row wide"><button class="btn sec" type="submit">Trocar senha</button></div>
+    </form>
+  </div>
+  </div>
+</section>
+<div id="toast" hidden></div>
+</div>
+
+</body>
+</html>
