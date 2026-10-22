@@ -1,6 +1,11 @@
-# Terminal Manutenção 3V3
+# Terminal 3V3 (produção e manutenção)
 
-Sistema web da manutenção de placas eletrônicas da 3V3 Tecnologia: cadastro de placas, diário de bordo, ficha com histórico, materiais, base de conhecimento, painel e relatório quinzenal. Visual de terminal, vários usuários ao mesmo tempo, dados no Supabase.
+Sistema web da linha de eletrônica da 3V3 Tecnologia, com duas áreas:
+
+- **Produção** (tecla `P`): ordens de produção, posto de trabalho com checklist do roteiro e cronômetro, rastreio por série, não conformidades da linha, painel e tempos medidos.
+- **Manutenção** (tecla `M`): cadastro de placas, diário de bordo, ficha com histórico, materiais, base de conhecimento, painel e relatório quinzenal.
+
+Uma reprovação no posto abre a NC e cria a placa na manutenção sozinha. Quando a manutenção encerra a placa como reparada, o operador recebe a unidade de volta e ela volta para a fila do posto que reprovou. Visual de terminal, vários usuários ao mesmo tempo, dados no Supabase.
 
 - **Front-end:** HTML, CSS e JavaScript puros (sem build). Publicado pelo GitHub Pages.
 - **Banco e login:** Supabase (Postgres + Auth + Realtime).
@@ -12,7 +17,8 @@ Sistema web da manutenção de placas eletrônicas da 3V3 Tecnologia: cadastro d
 | Papel | O que pode |
 |---|---|
 | **Admin** | Tudo. Configura o catálogo, gerencia usuários, apaga placas e exemplos. |
-| **Técnico** | Cadastra placas, registra o diário, pede materiais, registra conhecimento, escreve o relatório. Edita e apaga só os próprios registros. |
+| **Técnico** | Manutenção: cadastra placas, registra o diário, pede materiais, registra conhecimento, escreve o relatório. Edita e apaga só os próprios registros. Vê a produção sem registrar. |
+| **Operador** | Produção: cria ordens, registra aprovação e reprovação nos postos, abre NC, recebe unidades de volta da manutenção. Vê a manutenção sem registrar. |
 | **Leitura** | Vê painel, placas, fichas, relatório e evolução. Não registra nada. |
 
 O **primeiro usuário** criado no Supabase vira Admin automaticamente. Os seguintes entram como Leitura até o Admin mudar o papel (aba `[8] CONFIG > Usuários`).
@@ -25,7 +31,9 @@ O **primeiro usuário** criado no Supabase vira Admin automaticamente. Os seguin
 2. Vá em **SQL Editor > New query** e rode, nesta ordem, o conteúdo de cada arquivo (cole e clique em **Run**):
    1. [`supabase/migrations/0001_inicial.sql`](supabase/migrations/0001_inicial.sql): tabelas, perfis, regras de acesso e tempo real.
    2. [`supabase/migrations/0002_firmware.sql`](supabase/migrations/0002_firmware.sql): campo de versão de firmware na placa.
-   3. Opcional: [`supabase/seeds/pendencias_produtos_2026_1.sql`](supabase/seeds/pendencias_produtos_2026_1.sql): as 34 pendências por produto da planilha Produtos 2026.1 entram na base de Conhecimento.
+   3. [`supabase/migrations/0003_producao.sql`](supabase/migrations/0003_producao.sql): área de produção, papel operador e a função que abre NC na manutenção.
+   4. [`supabase/seeds/roteiros_producao.sql`](supabase/seeds/roteiros_producao.sql): os 364 passos de roteiro de 43 produtos (planilha da linha v3). Sem ele não dá para criar ordens.
+   5. Opcional: [`supabase/seeds/pendencias_produtos_2026_1.sql`](supabase/seeds/pendencias_produtos_2026_1.sql): as 34 pendências por produto da planilha Produtos 2026.1 entram na base de Conhecimento.
 
    Todos podem ser rodados de novo sem perder nem duplicar dados.
 
@@ -63,7 +71,15 @@ O **primeiro usuário** criado no Supabase vira Admin automaticamente. Os seguin
 3. Em `[8] CONFIG > Usuários`, mude o papel para **técnico** (ou admin) e clique em salvar.
 4. Para tirar o acesso de alguém, desmarque **Ativo**.
 
-## Uso no dia a dia
+## Uso no dia a dia: produção
+
+- **Nova ordem:** `[P] > [2] ORDENS`, escolha o produto e a quantidade. As séries são geradas (`OP-0001-001`...) ou coladas uma por linha.
+- **No posto:** `[P] > [3] POSTO`, escolha o posto da bancada (fica gravado no computador), clique em *testar* ou leia a série. Marque as operações do checklist e aprove. Se falhar, *Reprovar*: escolha o modo de falha, descreva, e a NC e a placa da manutenção são criadas.
+- **Volta da manutenção:** quando a placa for encerrada como reparada, aparece em *Deste posto na manutenção* com *receber de volta*. Ela volta para a fila do posto que reprovou.
+- **Tempos:** o cronômetro do posto mede cada passagem. Em `[6] TEMPOS` o admin compara com o tempo padrão e, a partir de 5 medições, aplica a mediana ao roteiro.
+- **Meta do dia:** `[M] > [8] CONFIG`.
+
+## Uso no dia a dia: manutenção
 
 - **Chegou placa:** `[2] PLACAS`, cadastre. O banco gera o ID (`MP-0001`, `MP-0002`...). Escreva o ID na placa.
 - **Trabalhou:** `[3] DIÁRIO`, uma linha por sessão. O status da placa vem do registro mais recente.
@@ -79,10 +95,11 @@ Atalhos (fora de campos de texto): `1` a `8` trocam de aba, `N` abre um novo reg
 ```
 index.html                      telas (HTML)
 assets/style.css                visual de terminal (tema claro e escuro)
-assets/app.js                   lógica, cálculos do relatório e acesso ao Supabase
+assets/app.js                   manutenção, login, navegação e acesso ao Supabase
+assets/producao.js              área de produção (ordens, posto, rastreio, NC, tempos, painel)
 config.js                       URL e chave pública do Supabase
 supabase/migrations/            schema, regras de acesso e tempo real (rodar em ordem)
-supabase/seeds/                 dados iniciais opcionais (pendências 2026.1)
+supabase/seeds/                 roteiros de produção e pendências 2026.1
 ```
 
 ## Rodar localmente

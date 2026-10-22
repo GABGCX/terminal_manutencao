@@ -194,7 +194,7 @@ function parseCat(txt){ return String(txt||"").split(/\r?\n/).map(l=>l.split(";"
 const catTxt = cat => cat.map(c=>[c.nome,c.linha,c.tipo,(c.versoes||[]).join(", "),(c.firmware||[]).join(", "),c.fabricante||""].join(" ; ")).join("\n");
 const CAT_PADRAO = parseCat(CAT_TXT);
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-const VIEWS = [["painel","PAINEL"],["placas","PLACAS"],["diario","DIÁRIO"],["materiais","MATERIAIS"],["conhecimento","CONHECIMENTO"],["relatorio","RELATÓRIO"],["evolucao","EVOLUÇÃO"],["config","CONFIG"]];
+const VIEWS_MAN = [["painel","PAINEL"],["placas","PLACAS"],["diario","DIÁRIO"],["materiais","MATERIAIS"],["conhecimento","CONHECIMENTO"],["relatorio","RELATÓRIO"],["evolucao","EVOLUÇÃO"],["config","CONFIG"]];
 
 /* ---------------- utilidades ---------------- */
 const $ = id => document.getElementById(id);
@@ -231,9 +231,10 @@ function qzList(){ let first = "2026-10-01";
 
 /* ---------------- estado ---------------- */
 const S = { placas:{}, diario:[], materiais:[], conhecimento:[], config:{}, relat:{}, ready:{}, derived:{} };
-const UI = { view:"painel", ficha:null, plFilt:"Abertas", diFilt:"7 dias", maFilt:"Pendentes", coFilt:"Todos", editDi:null, fichaDirty:false, relDirty:false, ro:false };
+const UI = { area:"man", view:"painel", ficha:null, plFilt:"Abertas", diFilt:"7 dias", maFilt:"Pendentes", coFilt:"Todos", editDi:null, fichaDirty:false, relDirty:false, ro:false };
 let sb=null, ME=null; const PROFILES={};
 const isAdm = () => !!ME && ME.papel==="admin";
+const papelNome = p => ({tecnico:"técnico", operador:"operador", admin:"admin", leitura:"leitura"})[p] || p;
 const canDel = autor => isAdm() || (!!ME && ME.papel==="tecnico" && !!autor && autor===ME.id);
 
 function cfg(){
@@ -315,7 +316,7 @@ function metrics(ini, fim){
 
 /* ---------------- render ---------------- */
 let rq = 0;
-function render(){ if (rq) return; rq = requestAnimationFrame(()=>{ rq=0; try{ derive(); renderAll(); }catch(e){ console.error(e); } }); }
+function render(){ if (rq) return; rq = requestAnimationFrame(()=>{ rq=0; try{ derive(); if (window.PROD) PROD.derive(); renderAll(); }catch(e){ console.error(e); } }); }
 function renderAll(){
   $("hdr-tec").textContent = cfg().tecnico || "(definir em CONFIG)";
   fillDatalist();
@@ -329,6 +330,7 @@ function renderAll(){
   else if (v==="relatorio") rRel();
   else if (v==="evolucao") rEvo();
   else if (v==="config") rCfg();
+  else if (v.startsWith("p-") && window.PROD) PROD.render(v);
   resolveAuthors();
 }
 function loading(){ return !S.ready.placas || !S.ready.diario; }
@@ -560,16 +562,16 @@ function rEvo(){
 }
 
 function rCfg(){
-  if (!UI.cfgFilled && S.ready.config){ $("cf-tec").value = cfg().tecnico; $("cf-alerta").value = cfg().alerta; $("cf-cat").value = catTxt(cfg().catalogo); UI.cfgFilled = true; }
+  if (!UI.cfgFilled && S.ready.config){ $("cf-tec").value = cfg().tecnico; $("cf-alerta").value = cfg().alerta; $("cf-meta").value = +S.config.meta_dia||0; $("cf-cat").value = catTxt(cfg().catalogo); UI.cfgFilled = true; }
   const ex = Object.values(S.placas).filter(p=>p.exemplo).length;
   $("ex-msg").textContent = ex ? `${ex} placas de exemplo carregadas.` : "Nenhum exemplo carregado.";
   $("exp-btns").innerHTML = ["placas","diario","materiais","conhecimento"].map(c=>`<button class="btn sec" type="button" data-exp="${c}">${c}.csv</button>`).join("");
-  $("mc-info").textContent = ME ? `${ME.nome||""} · ${ME.email||""} · papel: ${ME.papel==="tecnico"?"técnico":ME.papel}` : "";
+  $("mc-info").textContent = ME ? `${ME.nome||""} · ${ME.email||""} · papel: ${papelNome(ME.papel)}` : "";
   if (isAdm()){
     const L = Object.values(PROFILES).sort((a,b)=>(a.nome||"").localeCompare(b.nome||""));
     $("us-lista").innerHTML = `<div class="tw"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Ativo</th><th></th></tr></thead><tbody>${L.map(p=>`<tr>
       <td><input data-unome="${esc(p.id)}" value="${esc(p.nome)}" maxlength="60" aria-label="nome"></td><td class="muted">${esc(p.email)}</td>
-      <td><select data-upapel="${esc(p.id)}" aria-label="papel" style="width:auto">${["admin","tecnico","leitura"].map(x=>`<option value="${x}"${x===p.papel?" selected":""}>${x==="tecnico"?"técnico":x}</option>`).join("")}</select></td>
+      <td><select data-upapel="${esc(p.id)}" aria-label="papel" style="width:auto">${["admin","tecnico","operador","leitura"].map(x=>`<option value="${x}"${x===p.papel?" selected":""}>${papelNome(x)}</option>`).join("")}</select></td>
       <td><input type="checkbox" data-uativo="${esc(p.id)}"${p.ativo?" checked":""} style="width:auto" aria-label="ativo"${p.id===ME.id?" disabled":""}></td>
       <td><button class="lk" type="button" data-usave="${esc(p.id)}">salvar</button></td></tr>`).join("")}</tbody></table></div>`;
   }
@@ -589,16 +591,28 @@ function fillDatalist(){
 }
 
 /* ---------------- navegação ---------------- */
+const VIEWS_P = () => (window.PROD ? PROD.views : []);
+const VIEWS = () => UI.area==="prod" ? VIEWS_P() : VIEWS_MAN;
+const ALL_VIEWS = () => [...VIEWS_MAN, ...VIEWS_P(), ["ficha"], ["p-op"]];
+function renderNav(){
+  const areas = `<span class="area"><button type="button" data-area="man" class="${UI.area==="man"?"on":""}"><span class="k">[M]</span>MANUTENÇÃO</button><button type="button" data-area="prod" class="${UI.area==="prod"?"on":""}"><span class="k">[P]</span>PRODUÇÃO</button></span>`;
+  const lg = document.querySelector(".logo"); if (lg && lg.firstChild) lg.firstChild.nodeValue = UI.area==="prod" ? "3V3://PRODUÇÃO" : "3V3://MANUTENÇÃO";
+  $("nav").innerHTML = areas + VIEWS().map(([k,l],i)=>`<button type="button" data-v="${k}"><span class="k">[${i+1}]</span>${l}</button>`).join("");
+}
 function go(v, opt={}){
   if (v==="ficha"){ if (opt.id){ if (UI.ficha!==opt.id) UI.fichaDirty=false; UI.ficha = opt.id; } }
+  const area = v.startsWith("p-") ? "prod" : "man";
+  if (area!==UI.area || !$("nav").children.length){ UI.area = area; renderNav(); }
   UI.view = v;
   document.querySelectorAll(".view").forEach(s=>s.hidden = s.id!=="v-"+v);
-  $("nav").querySelectorAll("button").forEach(b=>b.setAttribute("aria-current", (b.dataset.v===v || (v==="ficha"&&b.dataset.v==="placas")) ? "page" : "false"));
-  try { history.replaceState(null,"", v==="ficha" ? "#placas" : "#"+v); } catch(e){}
+  const pai = v==="ficha" ? "placas" : (v==="p-op" ? "p-ordens" : v);
+  $("nav").querySelectorAll("button[data-v]").forEach(b=>b.setAttribute("aria-current", b.dataset.v===pai ? "page" : "false"));
+  try { history.replaceState(null,"", "#"+pai); } catch(e){}
   render(); window.scrollTo({top:0});
 }
-$("nav").innerHTML = VIEWS.map(([k,l],i)=>`<button type="button" data-v="${k}"><span class="k">[${i+1}]</span>${l}</button>`).join("");
-$("nav").addEventListener("click", e=>{ const b=e.target.closest("button[data-v]"); if (b) go(b.dataset.v); });
+$("nav").addEventListener("click", e=>{
+  const a = e.target.closest("button[data-area]"); if (a){ go(a.dataset.area==="prod" ? "p-painel" : "painel"); return; }
+  const b = e.target.closest("button[data-v]"); if (b) go(b.dataset.v); });
 
 document.addEventListener("click", e=>{
   const t = e.target;
@@ -633,7 +647,10 @@ document.addEventListener("keydown", e=>{
   const tag = (e.target.tagName||"").toLowerCase();
   if ((e.ctrlKey||e.metaKey) && e.key==="Enter"){ const f = e.target.closest && e.target.closest("form"); if (f){ e.preventDefault(); f.requestSubmit(); } return; }
   if (["input","textarea","select"].includes(tag) || e.ctrlKey || e.metaKey || e.altKey || document.body.classList.contains("out")) return;
-  if (/^[1-8]$/.test(e.key)){ go(VIEWS[+e.key-1][0]); }
+  const V = VIEWS();
+  if (/^[1-9]$/.test(e.key) && V[+e.key-1]){ go(V[+e.key-1][0]); }
+  else if (e.key==="m"||e.key==="M"){ go("painel"); }
+  else if (e.key==="p"||e.key==="P"){ go("p-painel"); }
   else if (e.key==="n"||e.key==="N"){ e.preventDefault(); if (!UI.ro){ go("diario"); $("di-placa").focus(); } }
 });
 
@@ -756,7 +773,7 @@ $("f-cfg").addEventListener("submit", async e=>{
   e.preventDefault(); const v = fd(e.target);
   const cat = parseCat($("cf-cat").value);
   if (!cat.length){ $("cf-err").textContent = "!! o catálogo ficou vazio"; return; }
-  const doc = {tecnico:v.tecnico||"", alerta:Math.max(1,+v.alerta||3), catalogo: cat};
+  const doc = {tecnico:v.tecnico||"", alerta:Math.max(1,+v.alerta||3), meta_dia:Math.max(0,Math.round(+v.meta_dia||0)), catalogo: cat};
   if (await write(()=>sb.from("config").update(doc).eq("id", 1), "Configuração salva.", ["config"])){ fillStaticSelects(); }
 });
 
@@ -909,13 +926,17 @@ function baixar(nome, texto, mime){
 }
 
 /* ---------------- carga de dados (Supabase) ---------------- */
-const TABELAS = ["placas","diario","materiais","conhecimento","relatorios","config","profiles"];
-const ORDEM = {placas:"id", diario:"criado_em", materiais:"criado_em", conhecimento:"criado_em", relatorios:"quinzena", config:"id", profiles:"criado_em"};
+const TABELAS = ["placas","diario","materiais","conhecimento","relatorios","config","profiles"];   // boot() acrescenta as da produção
+const ORDEM = {placas:"id", diario:"criado_em", materiais:"criado_em", conhecimento:"criado_em", relatorios:"quinzena", config:"id", profiles:"criado_em",
+  prod_roteiros:"seq", prod_ordens:"id", prod_unidades:"criado_em", prod_eventos:"criado_em", prod_nc:"criado_em"};
+const JANELA_DIAS = {prod_unidades:240, prod_eventos:240};   // produção antiga fica no banco, mas não é carregada
 const clean = r => { const o = {}; for (const k in r) o[k] = r[k]===null ? "" : r[k]; return o; };
 async function fetchAll(t){
   const out = [];
   for (let from=0;; from+=1000){
-    const {data, error} = await sb.from(t).select("*").order(ORDEM[t]).range(from, from+999);
+    let q = sb.from(t).select("*");
+    if (JANELA_DIAS[t]) q = q.gte("criado_em", new Date(Date.now()-JANELA_DIAS[t]*864e5).toISOString());
+    const {data, error} = await q.order(ORDEM[t]).range(from, from+999);
     if (error) throw error;
     out.push(...data); if (data.length < 1000) break;
   }
@@ -929,7 +950,8 @@ async function loadTable(t){
     else if (t==="materiais") S.materiais = rows.map(r=>({...clean(r), _id:r.id}));
     else if (t==="conhecimento") S.conhecimento = rows.map(r=>({...clean(r), _id:r.id, desc:r.descricao||""}));
     else if (t==="relatorios"){ const o={}; rows.forEach(r=>o[r.quinzena]=clean(r)); S.relat=o; }
-    else if (t==="config"){ const c = rows[0]||{}; S.config = {tecnico:c.tecnico||"", alerta:c.alerta||3, catalogo:Array.isArray(c.catalogo)?c.catalogo:null}; fillStaticSelects(); UI.cfgFilled=false; }
+    else if (t==="config"){ const c = rows[0]||{}; S.config = {tecnico:c.tecnico||"", alerta:c.alerta||3, meta_dia:+c.meta_dia||0, catalogo:Array.isArray(c.catalogo)?c.catalogo:null}; fillStaticSelects(); UI.cfgFilled=false; }
+    else if (window.PROD && PROD.tables.includes(t)) PROD.load(t, rows);
     else if (t==="profiles"){
       for (const k in PROFILES) delete PROFILES[k];
       rows.forEach(r=>PROFILES[r.id]=clean(r));
@@ -991,10 +1013,13 @@ async function iniciar(session){
   if (!p.ativo){ iniciado = false; await sb.auth.signOut(); telaLogin("!! Seu acesso está desativado. Fale com o administrador."); return; }
   ME = clean(p);
   document.body.classList.remove("out"); document.body.classList.toggle("adm", p.papel==="admin");
-  $("hdr-me").innerHTML = `${esc(p.nome||p.email)} <small>[${p.papel==="tecnico"?"técnico":esc(p.papel)}]</small>`;
-  if (p.papel==="leitura") setRO(true, "Modo leitura: você vê tudo, mas não registra. Para registrar, peça ao administrador o papel de técnico.");
+  document.body.classList.toggle("prod-w", p.papel==="admin" || p.papel==="operador");
+  $("hdr-me").innerHTML = `${esc(p.nome||p.email)} <small>[${esc(papelNome(p.papel))}]</small>`;
+  if (p.papel==="leitura") setRO(true, "Modo leitura: você vê tudo, mas não registra. Para registrar, peça ao administrador o papel de técnico ou operador.");
+  else if (p.papel==="operador") setRO(true, "");
   else setRO(false);
-  const hsh = HASH0.slice(1); go(VIEWS.some(v=>v[0]===hsh) ? hsh : "painel");
+  const hsh = HASH0.slice(1);
+  go(ALL_VIEWS().some(v=>v[0]===hsh) ? hsh : (p.papel==="operador" ? "p-posto" : "painel"));
   setDb("", "carregando");
   await Promise.all(TABELAS.map(loadTable));
   sb.channel("mudancas")
@@ -1004,7 +1029,8 @@ async function iniciar(session){
   window.addEventListener("focus", ()=>TABELAS.forEach(t=>queueReload(t, 200)));
 }
 
-(async function boot(){
+async function boot(){
+  if (window.PROD) PROD.tables.forEach(t=>{ if (!TABELAS.includes(t)) TABELAS.push(t); });
   const C = window.APP_CONFIG || {};
   showView("nenhuma");
   if (!window.supabase || !C.SUPABASE_URL || !C.SUPABASE_ANON_KEY || /COLE_AQUI/.test(C.SUPABASE_ANON_KEY)){
@@ -1019,4 +1045,5 @@ async function iniciar(session){
   if (!session){ setDb("off", "desconectado"); telaLogin(); return; }
   if (definirSenha){ document.body.classList.add("out"); showView("senha"); return; }
   iniciar(session);
-})();
+}
+document.addEventListener("DOMContentLoaded", boot);

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Terminal Manutenção 3V3</title>
-<meta name="description" content="Gestão e diário de bordo da manutenção de placas eletrônicas da 3V3 Tecnologia.">
+<title>Terminal 3V3</title>
+<meta name="description" content="Produção e manutenção de placas eletrônicas da 3V3 Tecnologia: ordens, postos, rastreio, não conformidades e diário de bordo.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230f1311'/%3E%3Ctext x='2' y='12' font-family='monospace' font-size='11' fill='%23f0a83a'%3E%3E_%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="assets/app.js" defer></script>
+<script src="assets/producao.js" defer></script>
 </head>
 <body class="out">
 <div class="wrap">
@@ -234,6 +235,7 @@
     <form id="f-cfg" autocomplete="off">
       <label class="w2">Responsável pelo setor (vai no relatório)<input id="cf-tec" name="tecnico" maxlength="60"></label>
       <label>Dias sem registro para alerta<input type="number" id="cf-alerta" name="alerta" min="1" max="60" step="1"></label>
+      <label>Meta de produção por dia (unidades)<input type="number" id="cf-meta" name="meta_dia" min="0" max="10000" step="1"></label>
       <label class="wide">Catálogo de produtos: uma linha por produto, no formato  Produto ; Linha ; Subgrupo ; PCB ; Firmware ; Fabricante (várias versões separadas por vírgula)<textarea id="cf-cat" name="catalogo" rows="14" maxlength="12000" style="font-size:12px;white-space:pre;overflow-x:auto"></textarea></label>
       <label class="wide" style="text-transform:none;letter-spacing:0"><span class="muted">O produto escolhido no cadastro puxa linha, tipo e as versões sugeridas. Placas já cadastradas não mudam.</span></label>
       <div class="err" id="cf-err"></div>
@@ -245,7 +247,8 @@
     <p class="prompt">Trabalhou: <b>[3] Diário</b>, uma linha por sessão. O status da placa vem daqui.</p>
     <p class="prompt">Fechou o diagnóstico: abra a ficha e marque defeito e causa.</p>
     <p class="prompt">Trabalho sem placa (bancada, POP, treino): placa <b>GERAL</b>.</p>
-    <p class="prompt">Papéis: <b>Técnico</b> registra; <b>Leitura</b> só consulta; <b>Admin</b> configura e gerencia usuários.</p>
+    <p class="prompt">Papéis: <b>Técnico</b> registra a manutenção; <b>Operador</b> registra a produção; <b>Leitura</b> só consulta; <b>Admin</b> faz tudo e gerencia usuários.</p>
+    <p class="prompt">Áreas: tecla <kbd>M</kbd> manutenção, <kbd>P</kbd> produção.</p>
     <p class="prompt">Atalhos fora de campos: <kbd>1</kbd>…<kbd>8</kbd> trocam de aba, <kbd>N</kbd> abre novo registro.</p>
   </div>
   </div>
@@ -272,6 +275,86 @@
       <div class="row wide"><button class="btn sec" type="submit">Trocar senha</button></div>
     </form>
   </div>
+  </div>
+</section>
+
+<!-- ================= PRODUÇÃO ================= -->
+<section class="view" id="v-p-painel" hidden>
+  <div class="box"><h2>Produção agora</h2><div class="kpis" id="pp-kpis"></div></div>
+  <div class="grid2">
+    <div class="box"><h2>Fila por posto <small>unidades esperando</small></h2><div id="pp-wip"></div></div>
+    <div class="box"><h2>Ordens abertas</h2><div id="pp-ops"></div></div>
+  </div>
+  <div class="grid2">
+    <div class="box"><h2>Concluídas por dia <small>últimos 14 dias</small></h2><div id="pp-dia"></div></div>
+    <div class="box"><h2>Reprovações <small>últimos 30 dias</small></h2><div id="pp-falhas"></div></div>
+  </div>
+  <div class="box"><h2>Primeira passagem por posto <small>últimos 30 dias</small></h2><div id="pp-fpy"></div></div>
+</section>
+
+<section class="view" id="v-p-ordens" hidden>
+  <div class="box w-prod"><h2>Nova ordem de produção</h2>
+    <form id="f-op" autocomplete="off">
+      <label class="w2"><span>Produto <span class="req">*</span></span><select id="op-produto" required></select></label>
+      <label><span>Quantidade <span class="req">*</span></span><input type="number" id="op-qtd" min="1" max="500" step="1" value="10" required></label>
+      <label>Lote<input id="op-lote" maxlength="40" placeholder="ex.: L43-01"></label>
+      <label>Previsto para<input type="date" id="op-prev"></label>
+      <label>Prioridade<select id="op-prio"></select></label>
+      <label class="wide">Séries (opcional: uma por linha; vazio gera OP-xxxx-001, 002...)<textarea id="op-series" rows="3" maxlength="20000"></textarea></label>
+      <label class="wide">Observação<input id="op-obs" maxlength="200"></label>
+      <div class="err" id="op-err"></div>
+      <div class="row wide"><button class="btn" type="submit">Criar ordem</button><span class="hint" id="op-norot"></span></div>
+    </form>
+  </div>
+  <div class="box"><h2>Ordens de produção</h2>
+    <div class="filters"><div class="chips" id="op-filt"></div></div>
+    <div id="op-lista"></div>
+  </div>
+</section>
+
+<section class="view" id="v-p-op" hidden>
+  <div class="box"><h2 id="opd-title">Ordem</h2>
+    <div id="opd-head"></div>
+    <div style="margin-top:14px" id="opd-grid"></div>
+    <div class="row" style="margin-top:10px"><button class="btn sec" type="button" data-go="p-ordens">Voltar</button></div>
+  </div>
+</section>
+
+<section class="view" id="v-p-posto" hidden>
+  <div class="box"><h2>Posto de trabalho</h2>
+    <div class="filters">
+      <select id="ps-posto" aria-label="posto" style="width:auto;max-width:320px"></select>
+      <select id="ps-op" aria-label="ordem" style="width:auto;max-width:200px"></select>
+      <input id="ps-serie" placeholder="ler ou digitar a série e Enter" style="max-width:280px;text-transform:uppercase" autocomplete="off">
+    </div>
+    <div id="ps-info" class="muted"></div>
+  </div>
+  <div class="grid2">
+    <div class="box"><h2>Fila do posto</h2><div id="ps-fila"></div></div>
+    <div class="box"><h2 id="ps-wtitle">Unidade em teste</h2><div id="ps-work"></div></div>
+  </div>
+  <div class="box"><h2>Deste posto na manutenção</h2><div id="ps-volta"></div></div>
+</section>
+
+<section class="view" id="v-p-rastreio" hidden>
+  <div class="box"><h2>Rastreio</h2>
+    <div class="filters"><input id="rs-busca" type="search" placeholder="série, OP, NC ou placa MP-..." style="max-width:320px;text-transform:uppercase" autocomplete="off"></div>
+    <div id="rs-res"></div>
+  </div>
+  <div class="box"><h2>Histórico da unidade</h2><div id="rs-unit"></div></div>
+</section>
+
+<section class="view" id="v-p-nc" hidden>
+  <div class="box"><h2>Não conformidades da linha <small>cada uma abre uma placa na manutenção</small></h2>
+    <div class="filters"><div class="chips" id="nc-filt"></div></div>
+    <div id="nc-lista"></div>
+  </div>
+</section>
+
+<section class="view" id="v-p-tempos" hidden>
+  <div class="box"><h2>Tempos medidos x tempo padrão <small>por produto e posto</small></h2>
+    <div id="tp-body"></div>
+    <div class="row" style="margin-top:10px"><button class="btn sec" type="button" id="tp-exp">Exportar passagens (.csv)</button></div>
   </div>
 </section>
 <div id="toast" hidden></div>
