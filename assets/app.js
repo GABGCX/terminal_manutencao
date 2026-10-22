@@ -34,50 +34,164 @@ const CSTAT = ["Registrado","Em análise","Aprovado","Virou POP","Implementado",
 const MSTAT = ["Solicitado","Aprovado","Comprado","Recebido","Cancelado"];
 const MPEND = new Set(["Solicitado","Aprovado","Comprado"]);
 const URG = ["Urgente","Alta","Normal","Baixa"];
-/* catálogo: produto ; linha ; tipo ; versões (catálogo 3V3 2025.01 + linha ECO) */
-const CAT_TXT = `DIR-PRO ; ECO ; Placa principal ;
-DIR-NUTRI ; ECO ; Placa principal ;
-DIR ; ECO ; Placa principal ;
-DUAL-NUTRI ; ECO ; Placa principal ;
-DIR-PS ; Linha catálogo 2025 ; Placa principal ; v4.4 rv1
-DIR-NB ; Linha catálogo 2025 ; Placa principal ; v1.2
-FIR ; Linha catálogo 2025 ; Placa principal ; v4.1
-EMR ; Linha catálogo 2025 ; Placa principal ; v2.3
-REP ; Linha catálogo 2025 ; Placa principal ;
-CIR ; Linha catálogo 2025 ; Placa principal ;
-CCPS-PS ; Controladores de carga ; Controlador de carga ; v3.1
-CCPS-NB ; Controladores de carga ; Controlador de carga ; v3.1
-ID-4T2P ; Expansões ; Expansão ; v1.0
-ID-4R2P ; Expansões ; Expansão ; v1.0
-IE-8R ; Expansões ; Expansão ; v2.3
-ID-6AS1i ; Expansões ; Expansão ; v3.4
-ID-485 ; Expansões ; Expansão ; v3
-STU-ST ; Sensores ; Sensor SDI-12 ;
-SCE-A ; Sensores ; Sensor SDI-12 ;
-SCE-R ; Sensores ; Sensor SDI-12 ;
-SPD-BP ; Sensores ; Sensor SDI-12 ;
-SPD-AP ; Sensores ; Sensor SDI-12 ;
-STD-M ; Sensores ; Sensor SDI-12 ;
-STU-A ; Sensores ; Sensor da EMR ;
-Pluviômetro ; Sensores ; Sensor da EMR ;
-Anemômetro ; Sensores ; Sensor da EMR ;
-Sensor de radiação solar ; Sensores ; Sensor da EMR ;
-CRV 3F12V ; Acessórios ; Controlador de válvula ;
-CRV 2F24V ; Acessórios ; Controlador de válvula ;
-Antena DIR ; Acessórios ; Antena ;
-Antena Moxon ; Acessórios ; Antena ;
-Antena CIR ; Acessórios ; Antena ;
-Cabo de antena ; Acessórios ; Cabo ;
-Caixa FIR (comando e potência) ; Acessórios ; Conjunto ;
-Válvula motorizada ; Acessórios ; Hidráulica ;
-Hidrômetro ; Acessórios ; Hidráulica ;
-Fonte nobreak ; Acessórios ; Energia ;
-Painel solar ; Acessórios ; Energia ;
-Bateria estacionária ; Acessórios ; Energia ;
-Outro ; Outros ; Outro ;`;
+/* catálogo oficial 3V3 Produtos 2026.1: produto ; linha ; subgrupo ; PCB ; firmware ; fabricante */
+const CAT_TXT = `ECO PRO 30 ; Linha ECO ; ECO ; ECO v2.1 ; D015 ; 3V3
+ECO PRO 30N ; Linha ECO ; ECO ; ECO v2.1 ; D015 ; 3V3
+ECO PRO Nutri ; Linha ECO ; ECO ; ECO v2.1 ; D015 ; 3V3
+ECO PRO Dual Nutri ; Linha ECO ; ECO ; ECO v2.1 ; D015 ; 3V3
+CIR ; Linha PRO ; CIR ; CIR V6.1 ; CIR-V5.1 ; 3V3
+DIR Solar ; Linha PRO ; DIR ; DIR V5.1 ; D011 ; 3V3
+DIR Energy T-Plus ; Linha PRO ; DIR ; DIR V5.1 ; D011 ; 3V3
+DIR Energy Plus ; Linha PRO ; DIR ; DIR ENERGY V2.0 ; D011 ; 3V3
+DIR PRO ; Linha PRO ; DIR ; ECO v2.1 ; D011 ; 3V3
+DIR Nutri ; Linha PRO ; DIR ; ECO v2.1 ; D014 ; 3V3
+DIR Dual Nutri ; Linha PRO ; DIR ; ECO v2.1 ; D015 ; 3V3
+iD-4T2P ; Linha PRO ; DIR Expert (placas de expansão) ; iD-4T2P V2.1 ; D011 ; 3V3
+iD-4R2P ; Linha PRO ; DIR Expert (placas de expansão) ; iD-4R2P V1.1 ;  ; 3V3
+iD-6AS1i ; Linha PRO ; DIR Expert (placas de expansão) ; iD-6AS1i V3.4 ;  ; 3V3
+REP ; Linha PRO ; REP ; DIR V5.1 ; D011 ; 3V3
+DSR Solar ; Linha PRO ; DSR ; DIR V5.1 ; D011 ; 3V3
+DSR Energy ; Linha PRO ; DSR ; DIR V5.1 ; D011 ; 3V3
+DSR Energy Plus ; Linha PRO ; DSR ; DIR V5.1 ; D011 ; 3V3
+FIR ; Linha PRO ; FIR ; FIR V4.1 ; F016 ; 3V3
+Válvula motorizada 1" (cabo 3m) ; Linha PRO ; FIR (adicionais) ;  ;  ; 3V3
+Válvula motorizada 1" (cabo 10m) ; Linha PRO ; FIR (adicionais) ;  ;  ; 3V3
+Canais de entrada para nutrição ; Linha PRO ; FIR (adicionais) ;  ;  ; 3V3
+Bomba WDM VHSE 2 6-15 ; Linha PRO ; FIR (adicionais) ;  ;  ; WDM
+Bomba SCHNEIDER BT4-0505E7 ; Linha PRO ; FIR (adicionais) ;  ;  ; Schneider
+Bomba SCHNEIDER BT4-2015E7 ; Linha PRO ; FIR (adicionais) ;  ;  ; Schneider
+Cavalete FIR ; Linha PRO ; FIR (adicionais) ;  ;  ; 3V3
+EMR ; Linha PRO ; EMR ; EMR V2.3 ; E002 ; 3V3
+RIF ; Linha PRO ; RIF ; RIF V3.0 ; RIF_V302 ; 3V3
+iE-PIVÔ ; Linha PRO ; Pivô ; PIR_NEO V2.0 ;  ; 3V3
+iD-485 ; Acessórios para controladores ; Placa de expansões ;  ;  ; 3V3
+ESP WIFI ; Acessórios para controladores ; Placa de expansões ;  ; 1.0 ; 3V3
+CCPS Solar ; Acessórios para controladores ; Controlador de Carga ; CCPS V3.1 ; CCPS_V5 ; 3V3
+CCPS Energy ; Acessórios para controladores ; Controlador de Carga ; CCPS V3.1 ; CCPS_V5 ; 3V3
+Fonte 14.1VDC ; Acessórios para controladores ; Fontes ;  ;  ; Ralltek
+Fonte 24VAC ; Acessórios para controladores ; Fontes ;  ;  ; SYLC
+Painel Solar de 10W ; Acessórios para controladores ; Painel Solar ;  ;  ; 3V3
+Painel Solar de 20W com cabo de 5m ; Acessórios para controladores ; Painel Solar ;  ;  ; 3V3
+Painel Solar de 20W com cabo de 8m ; Acessórios para controladores ; Painel Solar ;  ;  ; 3V3
+Antena 3v3 INOX - Omni-Direcional ; Acessórios para controladores ; Antenas ;  ;  ; 3V3
+Antena DIR - Omni-Direcional ; Acessórios para controladores ; Antenas ;  ;  ; ARS
+Antena CIR Omni-Direcional Alto Ganho ; Acessórios para controladores ; Antenas ;  ;  ; ARS
+Cabo 2m ; Acessórios para controladores ; Cabo de antena ;  ;  ; 3V3
+Cabo 5m ; Acessórios para controladores ; Cabo de antena ;  ;  ; 3V3
+Cabo 10m ; Acessórios para controladores ; Cabo de antena ;  ;  ; 3V3
+Cabo 15m ; Acessórios para controladores ; Cabo de antena ;  ;  ; 3V3
+Cabo 20m ; Acessórios para controladores ; Cabo de antena ;  ;  ; 3V3
+3F12V ; Atuadores ; Solenoides 3V3 ; CRV3F12 V1.0 ;  ; 3V3
+2F12V ; Atuadores ; Solenoides 3V3 ; CRV2F12 V3.0 ;  ; 3V3
+2F24V ; Atuadores ; Solenoides 3V3 ;  ;  ; 3V3
+Suporte para 1 Solenoide ; Atuadores ; Solenoides 3V3 / Suporte ;  ;  ; 3V3
+Suporte para 2 Solenoide ; Atuadores ; Solenoides 3V3 / Suporte ;  ;  ; 3V3
+Suporte para 4 Solenoides ; Atuadores ; Solenoides 3V3 / Suporte ;  ;  ; 3V3
+Baccara 1/8" N.O. 3 VIAS NPT 1.2MM 24VAC - / 24VAC - G75-A-1114121. ; Atuadores ; Solenoides Revenda ;  ;  ; Baccara
+Bermad S985, 1/8" ; Atuadores ; Solenoides Revenda ;  ;  ; Bermad
+Válvula de 1.1/2" BSP ; Atuadores ; Válvula de Irrigação Hidráulica ;  ;  ; Baccara
+Válvula de 1" BSP ; Atuadores ; Válvula de Irrigação Hidráulica ;  ;  ; Baccara
+Válvula de 2" BSP ; Atuadores ; Válvula de Irrigação Hidráulica ;  ;  ; Baccara
+Válvula de 2.1/2" BSP ; Atuadores ; Válvula de Irrigação Hidráulica ;  ;  ; Baccara
+Válvula de 3" BSP ; Atuadores ; Válvula de Irrigação Hidráulica ;  ;  ; Baccara
+Válvula de 4" BSP ; Atuadores ; Válvula de Irrigação Hidráulica ;  ;  ; Baccara
+Válvula borboleta CSR de 4" 220VAC ; Atuadores ; Válvula Borboleta ;  ;  ; CSR
+Piloto redutor/sustentador de pressão Bermad ; Atuadores ; Piloto ;  ;  ; Bermad
+Relé Hidraulico Galit ; Atuadores ; Relé Hidráulico ;  ;  ; Bermad
+Relé de interface 220Vac PRZ ; Atuadores ; Relé de Interface ;  ;  ; Metaltex
+Relé de interface 24Vdc PRZ ; Atuadores ; Relé de Interface ;  ;  ; Metaltex
+Relé de interface 12Vdc PRZ ; Atuadores ; Relé de Interface ;  ;  ; Metaltex
+Relé de interface 5Vdc PRZ ; Atuadores ; Relé de Interface ;  ;  ; Metaltex
+Hidrômetro unijato DN20 ; Hidrometria ; Fertímetro ;  ;  ; Hidrohider
+Hidrômetro Mecânico 1" - Tangencial c/ Cabo de Dados ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Mecânico 2" - Tangencial c/ Cabo de Dados ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Mecânico 3" - Tangencial c/ Cabo de Dados ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Mecânico 4" - Tangencial c/ Cabo de Dados ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Mecânico 5" - Tangencial c/ Cabo de Dados ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Mecânico 6" - Tangencial c/ Cabo de Dados ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Mecânico 8" - Tangencial c/ Cabo de Dados ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Eletromagnetico 400mm - 16" ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Hidrômetro Eletromagnetico 500mm - 20" ; Hidrometria ; Hidrômetros ;  ;  ; Hidrometer
+Quadro para inversor 5cv-30cv ; Quadros ; Inversores ;  ;  ; 3V3
+Quadro para inversor 40cv-75cv ; Quadros ; Inversores ;  ;  ; 3V3
+Quadro para 4 Solenoides Internos ; Quadros ; Solenoides ;  ;  ; 3V3
+Quadro para 20 Solenoides Internos ; Quadros ; Solenoides ;  ;  ; 3V3
+Quadro para multimedidor ; Quadros ; Multimedidores ;  ;  ; 3V3
+STU-ST ; Sensores ; Umidade do Solo ; STU-S V3.1 ; STU-S_V320 ; 3V3
+Teros 10 ; Sensores ; Umidade do Solo ;  ;  ; Meter
+Teros 12 ; Sensores ; Umidade do Solo ;  ;  ; Meter
+STU-AI ; Sensores ; Umidade do Ar ;  ;  ; 3V3
+STU-AS ; Sensores ; Umidade do Ar ; STU-A V2 ;  ; 3V3
+Solar Shield ; Sensores ; Umidade do Ar ;  ;  ; 3V3
+SMF ; Sensores ; Molhamento Foliar ; SMF V3 ; SMF_V309 ; 3V3
+STD-M ; Sensores ; Tensiometria ; STD-M V2 ; STD-M_V203 ; 3V3
+SCE-A ; Sensores ; Condutividade da água e nível ; SCE V2.1 ; SCE_VXX2 ; 3V3
+SCE-R ; Sensores ; Condutividade da água e nível ; SCE V2.1 ; SCE_VXX2 ; 3V3
+SPD-AP ; Sensores ; Pressão ; SPD V2.1 ; SPD_V201 ; 3V3
+SPD-BP ; Sensores ; Pressão ; SPD V2.1 ; SPD_V201 ; 3V3
+Sensor de Pressão para Adutora 0-100MCA 4a20mA ; Sensores ; Pressão ;  ;  ; 3V3
+Sensor de Pressão para Adutora 0-160MCA 4a20mA ; Sensores ; Pressão ;  ;  ; 3V3
+SNU ; Sensores ; Nível de fluidos ; SPD V2.1 ; SNU_V201 ; 3V3
+Sonda de Nivel Hidrostatico PR17 BR 0 à 100 mca, 4 à 20 mA ; Sensores ; Nível de fluidos ;  ;  ; Keller
+Sonda de Nivel Hidrostatico Ø17MM-10-42 MGG-TNH-MICRO 0 à 100 mca, 4 à 20 mA ; Sensores ; Nível de fluidos ;  ;  ; Megga Instrumentos
+Sonda de Nivel Hidrostatico 0 à 2 mca, 4 à 20 mA (Keller) ; Sensores ; Nível de fluidos ;  ;  ; Keller
+Sonda de Nivel Hidrostatico 0 à 2 mca, 4 à 20 mA (Megga Instrumentos) ; Sensores ; Nível de fluidos ;  ;  ; Megga Instrumentos
+Sonda de Nivel Hidrostatico 0 à 10 mca, 4 à 20 mA (Keller) ; Sensores ; Nível de fluidos ;  ;  ; Keller
+Sonda de Nivel Hidrostatico 0 à 10 mca, 4 à 20 mA (Megga Instrumentos) ; Sensores ; Nível de fluidos ;  ;  ; Megga Instrumentos
+SPG ; Sensores ; Posicionamento Geográfico ; SPD V2.1 ; SPG_V201 ; 3V3
+Pluviometro Cálice - SKU 6464 ; Sensores ; Meteorologia ;  ;  ; Davis
+Anemômetro - SKU 6410 ; Sensores ; Meteorologia ;  ;  ; Davis
+Sensor de Radiação Solar - SKU 6450 ; Sensores ; Meteorologia ;  ;  ; Davis
+Chave de Fluxo 1" a 6" ; Sensores ; Vazão ;  ;  ; Open Soluções
+Microtubos 8mm para comandos hidraulicos ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - Joelho 8mm X 1/8 ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - Joelho 8mm X 1/4 ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - T 8mm X 8mm X 8mm ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - T 1/8mm X 8mmX 8mm ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - T 1/4mm X 8mmX 8mm ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - União 8mm X 8mm ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Bucha de Redução de 1/2 R. INT.1/4 ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Bucha de Redução de R.1/4 R. INT.1/8 ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - Cotovelo 8mm X 8mm ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - Cotovelo 8mm X 1/8" ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Conexão de comando hidraulico - Conector Reto 8mm X 1/8" ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Joelho Rosca Int. 1" ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Adaptador Rosca Ext 1" ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+Adaptador Rosca Ext 3/4 ; Hidráulica ; Microtubos e conexões ;  ;  ; RSB
+IF20-202-1 - INVERSOR DE FREQUENCIA VETORIAL IF20 - 2HP - 220V MONOFASICO ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20-403-3 - INVERSOR FREQUÊNCIA IF20 - 3HP - 380V TRIF. ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20 - 405 - 3 - INVERSOR DE FREQUENCIA VETORIAL IF20 - 5HP- 380V TRIFASICO ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20-410-3 - INVERSOR FREQUENCIA IF20-10HP-380V TRIF. ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20-410-3 - INVERSOR FREQUENCIA IF20-15HP-380V TRIF. ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20 - 420-3A - INVERSOR FREQUENCIA VETORIAL IF20 - 20HP - 380V TRIFASICO ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20-430-3 - INVERSOR FREQUENCIA IF20 - 30HP - 380V TRIF. ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF30-530-3 INVERSOR DE FREQ. VETORIAL AVANÇADO IF30 - 30HP 380-480V TRIFÁSICO -C/ FILTRO EMC ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20-440-3 INVERSOR DE FREQUENCIA 40cv 380v If20-440-3 - METALTEX 380v ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF20- 550-3 INVERSOR DE FREQUENCIA VETORIAL 50HP 380V A 460V TRIFÁSICO ; Alta potência ; Inversores ;  ;  ; Metaltex
+IF30-550-3 - INVERSOR DE FREQ. VETORIAL AVANÇADO IF30 - 50HP 380-480V TRIFÁSICO ; Alta potência ; Inversores ;  ;  ; Metaltex
+Inversor De Frequência Weg Cfw500 50cv 145a 220v Trifásico 220v ; Alta potência ; Inversores ;  ;  ; WEG
+INVERSOR DE FREQUENCIA VETORIAL 75HP - 380V TRIFÁSICO - IF20-475-3 ; Alta potência ; Inversores ;  ;  ; Metaltex
+INVERSOR DE FREQUENCIA VETORIAL 200HP 380/480V - TRIFÁSICO ; Alta potência ; Inversores ;  ;  ; Metaltex
+TECLADO FRONTAL PARA INVERSOR DE FREQUENCIA IF20-KEP ; Alta potência ; Acessórios de inversor ;  ;  ; 
+Multimedidor Digital PL-M2 Alimentação 85…265Vca/cc Saida RS485, T. Max. 500v (Porta De Painel) > POLUS ; Alta potência ; Multimedidor ;  ;  ; Polus
+MULTIMEDIDOR PM5110 MODBUS RS485 ; Alta potência ; Multimedidor ;  ;  ; Schneider Electric
+Multimedidor MMW03-CH ; Alta potência ; Multimedidor ;  ;  ; WEG
+Multimedidor MMW03-M22CH ; Alta potência ; Multimedidor ;  ;  ; WEG
+Cabo PP 2x0.75mm ; Outros ; Cabos ;  ;  ; Contactsul
+Cabo PP 3x0.5mm ; Outros ; Cabos ;  ;  ; Contactsul
+Cabo PP 4x0,5mm ; Outros ; Cabos ;  ;  ; Contactsul
+Cabo PP 5x0,5mm ; Outros ; Cabos ;  ;  ; Contactsul
+CABO MANGA 3 X 20AWG 300V 70Â°C SB - PT ; Outros ; Cabos ;  ;  ; Sparflex
+CABO MANGA 2 X 20AWG 300V 70Â°C SB - PT ; Outros ; Cabos ;  ;  ; Sparflex
+CABO FLAT NU 10X26AWG/10X0.13MM2 300V 70C - GE ; Outros ; Cabos ;  ;  ; Cabolider
+Cabo Coaxial DLC58 (CI de Cobre, Tranca ; Outros ; Cabos ;  ;  ; Datalink
+CABO AF-BF C/ TUBO PVC 250V SN 1PX22AWG/030MM2 300V 70C - PT ; Outros ; Cabos ;  ;  ; Cabolider
+CABO 2 X 22AWG BF+T 300V 70Â°C - PT ; Outros ; Cabos ;  ;  ; Sparflex
+Outro ; Outros ; Outro ;  ;  ; `;
+const lista = s => (s||"").split(",").map(v=>v.trim()).filter(Boolean);
 function parseCat(txt){ return String(txt||"").split(/\r?\n/).map(l=>l.split(";").map(x=>x.trim())).filter(p=>p[0])
-  .map(([nome,linha,tipo,vers])=>({nome, linha:linha||"Outros", tipo:tipo||"", versoes:(vers||"").split(",").map(v=>v.trim()).filter(Boolean)})); }
-const catTxt = cat => cat.map(c=>[c.nome,c.linha,c.tipo,c.versoes.join(", ")].join(" ; ")).join("\n");
+  .map(([nome,linha,tipo,vers,fw,fab])=>({nome, linha:linha||"Outros", tipo:tipo||"", versoes:lista(vers), firmware:lista(fw), fabricante:fab||""})); }
+const catTxt = cat => cat.map(c=>[c.nome,c.linha,c.tipo,(c.versoes||[]).join(", "),(c.firmware||[]).join(", "),c.fabricante||""].join(" ; ")).join("\n");
 const CAT_PADRAO = parseCat(CAT_TXT);
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const VIEWS = [["painel","PAINEL"],["placas","PLACAS"],["diario","DIÁRIO"],["materiais","MATERIAIS"],["conhecimento","CONHECIMENTO"],["relatorio","RELATÓRIO"],["evolucao","EVOLUÇÃO"],["config","CONFIG"]];
@@ -127,7 +241,7 @@ function cfg(){
   if (!S.config.catalogo && Array.isArray(S.config.produtos)) for (const p of S.config.produtos) if (!cat.some(c=>c.nome===p)) cat = [...cat, {nome:p, linha:"Outros", tipo:"", versoes:[]}];
   return { tecnico: S.config.tecnico || "", alerta: +S.config.alerta || 3, catalogo: cat, produtos: cat.map(c=>c.nome) };
 }
-const catInfo = nome => cfg().catalogo.find(c=>c.nome===nome) || {nome, linha:"Outros", tipo:"", versoes:[]};
+const catInfo = nome => cfg().catalogo.find(c=>c.nome===nome) || {nome, linha:"Outros", tipo:"", versoes:[], firmware:[], fabricante:""};
 function prodOpts(sel, blank){
   const cat = cfg().catalogo; const linhas = [...new Set(cat.map(c=>c.linha))];
   let html = blank!==undefined ? `<option value="">${esc(blank)}</option>` : "";
@@ -135,8 +249,10 @@ function prodOpts(sel, blank){
   if (sel && !cat.some(c=>c.nome===sel)) html += `<option selected>${esc(sel)}</option>`;
   return html;
 }
-function fillVersoes(nome){ const v = catInfo(nome).versoes; $("dl-versoes").innerHTML = [...v, "não identificada"].map(x=>`<option value="${esc(x)}"></option>`).join(""); }
-const pv = x => esc(x.produto) + (x.versao ? ` <span class="muted">${esc(x.versao)}</span>` : "");
+function fillVersoes(nome){ const c = catInfo(nome);
+  $("dl-versoes").innerHTML = [...(c.versoes||[]), "não identificada"].map(x=>`<option value="${esc(x)}"></option>`).join("");
+  $("dl-firmware").innerHTML = [...(c.firmware||[]), "não identificado"].map(x=>`<option value="${esc(x)}"></option>`).join(""); }
+const pv = x => esc(x.produto) + ((x.versao||x.firmware) ? ` <span class="muted">${esc([x.versao, x.firmware].filter(Boolean).join(" · "))}</span>` : "");
 
 /* ---------------- derivação (mesma lógica da planilha) ---------------- */
 function derive(){
@@ -259,7 +375,7 @@ function rPlacas(){
   let L = UI.plFilt==="Abertas" ? abertas() : D().sort((a,b)=>b.id.localeCompare(a.id));
   if (UI.plFilt==="Encerradas") L = L.filter(x=>!x.aberta);
   if (lv) L = L.filter(x=>x.linha===lv);
-  if (q) L = L.filter(x=>[x.id,x.produto,x.versao,x.linha,x.relatado,x.origem,x.ref,x.serie,x.status,x.defeito].join(" ").toLowerCase().includes(q));
+  if (q) L = L.filter(x=>[x.id,x.produto,x.versao,x.firmware,x.linha,x.relatado,x.origem,x.ref,x.serie,x.status,x.defeito].join(" ").toLowerCase().includes(q));
   $("pl-lista").innerHTML = L.length ? `<div class="tw"><table><thead><tr><th>ID</th><th>Entrada</th><th>Produto</th><th>Origem</th><th>Defeito relatado</th><th>Status</th><th class="n">Dias</th><th class="n">Horas</th><th>Constatado</th><th></th></tr></thead><tbody>${
     L.map(x=>`<tr class="click" data-ficha="${esc(x.id)}"><td class="id">${esc(x.id)}</td><td class="nw">${brs(x.entrada)}</td><td class="nw">${pv(x)}<br><span class="muted">${esc(x.linha)}</span></td><td>${esc(x.origem)}</td><td>${esc(x.relatado)}</td><td>${st(x.status)}</td><td class="n">${x.dias}</td><td class="n">${h(x.horas)}</td><td>${esc(x.defeito||"")}</td><td class="alert">${x.alerta.startsWith("sem")?"!! "+esc(x.alerta):""}</td></tr>`).join("")}</tbody></table></div>`
     : `<div class="empty">${Object.keys(S.placas).length?"Nada encontrado com esse filtro.":"Nenhuma placa ainda. Use o formulário acima."}</div>`;
@@ -269,7 +385,7 @@ function rFicha(){
   const x = S.derived[UI.ficha];
   if (!x){ $("fi-id").textContent = UI.ficha || "-"; $("fi-kv").innerHTML = `<div class="empty">${loading()?"carregando...":"Placa não encontrada (pode ter sido excluída)."}</div>`; $("fi-tl").innerHTML=""; $("fi-st").innerHTML=""; return; }
   $("fi-id").textContent = x.id; $("fi-st").innerHTML = st(x.status) + (x.alerta.startsWith("sem")?` <span class="alert">!! ${esc(x.alerta)}</span>`:"");
-  const kv = [["Produto",x.produto],["Versão / revisão",x.versao||"não informada"],["Linha · tipo",[x.linha,x.tipo].filter(Boolean).join(" · ")],["Origem",x.origem],["Ref. origem",x.ref],["Nº série",x.serie],["Entrada",br(x.entrada)],["Prioridade",x.prio||"Normal"],
+  const kv = [["Produto",x.produto],["Placa (PCB)",x.versao||"não informada"],["Firmware",x.firmware||"não informado"],["Fabricante",catInfo(x.produto).fabricante||"-"],["Linha · tipo",[x.linha,x.tipo].filter(Boolean).join(" · ")],["Origem",x.origem],["Ref. origem",x.ref],["Nº série",x.serie],["Entrada",br(x.entrada)],["Prioridade",x.prio||"Normal"],
     ["Defeito relatado",x.relatado],["Impedimento atual",x.imp||"-"],["Dias",x.dias],["Horas totais",h(x.horas)+" h"],["Horas diagnóstico",h(x.hDiag)+" h"],["Horas reparo + teste",h(x.hRep)+" h"],
     ["Diagnóstico concluído",br(x.diagEm)||"-"],["Encerrada em",br(x.encerradaEm)||"-"],["Resultado",x.resultado||"-"],["Defeito constatado",x.defeito||"-"],["Causa provável",x.causa||"-"],["Componentes",x.componentes||"-"]];
   $("fi-kv").innerHTML = kv.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v||"-")}</dd></div>`).join("");
@@ -286,7 +402,7 @@ function fillFichaForm(x){
   $("fi-defeito").innerHTML = opts(DEFEITO, x.defeito, "(ainda não)");
   $("fi-causa").innerHTML = opts(CAUSA, x.causa, "(ainda não)");
   $("fi-comp").value = x.componentes||""; $("fi-destino").value = x.destino||"";
-  $("fi-entrada").value = x.entrada||""; $("fi-produto").innerHTML = prodOpts(x.produto); $("fi-versao").value = x.versao||""; fillVersoes(x.produto);
+  $("fi-entrada").value = x.entrada||""; $("fi-produto").innerHTML = prodOpts(x.produto); $("fi-versao").value = x.versao||""; $("fi-firmware").value = x.firmware||""; fillVersoes(x.produto);
   $("fi-origem").innerHTML = opts(ORIGEM, x.origem); $("fi-prio").innerHTML = opts(PRIO, x.prio||"Normal");
   $("fi-relatado").value = x.relatado||""; $("fi-serie").value = x.serie||""; $("fi-ref").value = x.ref||"";
   $("fi-del").hidden = x.nreg>0 || !isAdm();
@@ -469,7 +585,7 @@ let dlSig = "";
 function fillDatalist(){
   const A = abertas().map(x=>x.id), E = D().filter(x=>!x.aberta).map(x=>x.id).sort().reverse();
   const sig = A.join()+"|"+E.join(); if (sig===dlSig) return; dlSig = sig;
-  $("dl-placas").innerHTML = ["GERAL",...A,...E].map(id=>{ const x=S.derived[id]; return `<option value="${esc(id)}">${x?esc(`${x.status} · ${x.produto}${x.versao?" "+x.versao:""} · ${x.relatado}`):"atividade sem placa"}</option>`; }).join("");
+  $("dl-placas").innerHTML = ["GERAL",...A,...E].map(id=>{ const x=S.derived[id]; return `<option value="${esc(id)}">${x?esc(`${x.status} · ${x.produto}${x.versao?" "+x.versao:""}${x.firmware?" "+x.firmware:""} · ${x.relatado}`):"atividade sem placa"}</option>`; }).join("");
 }
 
 /* ---------------- navegação ---------------- */
@@ -549,10 +665,10 @@ $("f-placa").addEventListener("submit", async e=>{
   const miss = [["entrada","data"],["produto","produto"],["origem","origem"],["relatado","defeito relatado"]].filter(([k])=>!v[k]).map(x=>x[1]);
   if (miss.length){ err.textContent = "!! falta: "+miss.join(", "); return; }
   const ci = catInfo(v.produto);
-  const doc = {entrada:v.entrada, produto:v.produto, versao:nz(v.versao), linha:ci.linha, tipo:nz(ci.tipo), origem:v.origem, relatado:v.relatado, prio:v.prio||"Normal", serie:nz(v.serie), ref:nz(v.ref)};
+  const doc = {entrada:v.entrada, produto:v.produto, versao:nz(v.versao), firmware:nz(v.firmware), linha:ci.linha, tipo:nz(ci.tipo), origem:v.origem, relatado:v.relatado, prio:v.prio||"Normal", serie:nz(v.serie), ref:nz(v.ref)};
   const r = await write(()=>sb.from("placas").insert(doc).select("id").single(), null, ["placas"]);
   if (r){ toast(`${r.id} cadastrada. Escreva o ID na placa.`);
-    ["pl-relatado","pl-serie","pl-ref","pl-versao"].forEach(i=>$(i).value=""); $("pl-prio").value="Normal"; $("pl-relatado").focus();
+    ["pl-relatado","pl-serie","pl-ref","pl-versao","pl-firmware"].forEach(i=>$(i).value=""); $("pl-prio").value="Normal"; $("pl-relatado").focus();
   }
 });
 /* ficha */
@@ -560,7 +676,7 @@ $("f-ficha").addEventListener("input", ()=>UI.fichaDirty=true);
 $("f-ficha").addEventListener("submit", async e=>{
   e.preventDefault(); const v = fd(e.target); const id = UI.ficha; if (!S.placas[id]) return;
   const ci = catInfo(v.produto);
-  const upd = {versao:nz(v.versao), linha:ci.linha, tipo:nz(ci.tipo), defeito:nz(v.defeito), causa:nz(v.causa), componentes:nz(v.componentes), destino:nz(v.destino), entrada:v.entrada, produto:v.produto, origem:v.origem, prio:v.prio||"Normal", relatado:v.relatado, serie:nz(v.serie), ref:nz(v.ref)};
+  const upd = {versao:nz(v.versao), firmware:nz(v.firmware), linha:ci.linha, tipo:nz(ci.tipo), defeito:nz(v.defeito), causa:nz(v.causa), componentes:nz(v.componentes), destino:nz(v.destino), entrada:v.entrada, produto:v.produto, origem:v.origem, prio:v.prio||"Normal", relatado:v.relatado, serie:nz(v.serie), ref:nz(v.ref)};
   if (await write(()=>sb.from("placas").update(upd).eq("id", id), "Ficha salva.", ["placas"])){ UI.fichaDirty=false; render(); }
 });
 $("fi-del").addEventListener("click", e=>confirmDel(e.target, async ()=>{ const id=UI.ficha; if (await delDoc("placas",id)) go("placas"); }));
@@ -633,6 +749,9 @@ $("re-dl").addEventListener("click", async ()=>{
   baixar(`relatorio-manutencao-${$("re-q").value}.txt`, "\ufeff"+$("re-txt").textContent, "text/plain");
 });
 /* config */
+$("cf-restaurar").addEventListener("click", e=>confirmDel(e.target, async ()=>{
+  if (await write(()=>sb.from("config").update({catalogo:null}).eq("id", 1), "Catálogo oficial 2026.1 restaurado.", ["config"])){ UI.cfgFilled=false; }
+}));
 $("f-cfg").addEventListener("submit", async e=>{
   e.preventDefault(); const v = fd(e.target);
   const cat = parseCat($("cf-cat").value);
@@ -644,7 +763,7 @@ $("f-cfg").addEventListener("submit", async e=>{
 /* exportação */
 async function exportCsv(col){
   const cols = {
-    placas:["id","entrada","produto","versao","linha","tipo","origem","relatado","prio","serie","ref","defeito","causa","componentes","destino"],
+    placas:["id","entrada","produto","versao","firmware","linha","tipo","origem","relatado","prio","serie","ref","defeito","causa","componentes","destino"],
     diario:["data","placa","atividade","horas","feito","status","teste","componente","impedimento","material","destaque","obs"],
     materiais:["data","item","spec","qtd","placa","urg","status","recebido","obs"],
     conhecimento:["data","tipo","titulo","descricao","placas","produto","acao","resp","status"],
@@ -661,19 +780,20 @@ async function exportCsv(col){
 function exemplo(){
   const off = diff("2026-10-22", today()); const d = n => addDays("2026-10-01", n-1+off);
   const P = [
-    ["EX-01",1,"DIR-PRO","Linha de produção","Curto na alimentação (P1)","Normal","","NC-0001","Ponte de solda","Montagem/solda","","Devolvida à linha (P2)"],
-    ["EX-02",1,"DIR-PRO","Linha de produção","Reprovada na JIGA (P4)","Normal","","NC-0002","Componente danificado","Componente (lote/fornecedor)","Q5","Devolvida à linha (P4)"],
-    ["EX-03",2,"DIR-NUTRI","Linha de produção","Válvula 14 não abre (P6)","Alta","","NC-0004","Componente danificado","Não identificada","",""],
-    ["EX-04",3,"DIR-NB","Retorno de campo","Não liga depois de chuva forte","Normal","NB-2207","Cliente A","Oxidação/umidade","Ambiente (umidade, surto)","","Sucata; cliente avisado"],
-    ["EX-05",6,"DIR-PRO","Retorno de campo","Saídas 15 a 18 não acionam","Alta","DP-0412","Cliente B","Trilha/ilha danificada","Não identificada","U12",""],
-    ["EX-06",8,"DIR-NUTRI","Linha de produção","5V fora da faixa (P2)","Normal","","NC-0007","Componente danificado","Componente (lote/fornecedor)","Regulador 5V","Devolvida à linha (P2)"],
-    ["EX-07",9,"CCPS-PS","Estoque","Placa parada no estoque, testar antes de usar","Baixa","CC-1180","","Sem defeito constatado","","","Volta ao estoque"],
-    ["EX-08",13,"DIR-PRO","Linha de produção","Duas saídas acionam juntas (P6)","Normal","","NC-0011","Ponte de solda","Montagem/solda","","Devolvida à linha (P6)"],
-    ["EX-09",16,"DIR-PRO","Linha de produção","LED da saída 7 apagado (P6)","Normal","","NC-0013","Componente errado/invertido","Montagem/solda","LED saída 7","Devolvida à linha (P6)"],
+    ["EX-01",1,"DIR PRO","Linha de produção","Curto na alimentação (P1)","Normal","","NC-0001","Ponte de solda","Montagem/solda","","Devolvida à linha (P2)"],
+    ["EX-02",1,"DIR PRO","Linha de produção","Reprovada na JIGA (P4)","Normal","","NC-0002","Componente danificado","Componente (lote/fornecedor)","Q5","Devolvida à linha (P4)"],
+    ["EX-03",2,"DIR Nutri","Linha de produção","Válvula 14 não abre (P6)","Alta","","NC-0004","Componente danificado","Não identificada","",""],
+    ["EX-04",3,"DIR Energy Plus","Retorno de campo","Não liga depois de chuva forte","Normal","NB-2207","Cliente A","Oxidação/umidade","Ambiente (umidade, surto)","","Sucata; cliente avisado"],
+    ["EX-05",6,"DIR PRO","Retorno de campo","Saídas 15 a 18 não acionam","Alta","DP-0412","Cliente B","Trilha/ilha danificada","Não identificada","U12",""],
+    ["EX-06",8,"DIR Nutri","Linha de produção","5V fora da faixa (P2)","Normal","","NC-0007","Componente danificado","Componente (lote/fornecedor)","Regulador 5V","Devolvida à linha (P2)"],
+    ["EX-07",9,"CCPS Solar","Estoque","Placa parada no estoque, testar antes de usar","Baixa","CC-1180","","Sem defeito constatado","","","Volta ao estoque"],
+    ["EX-08",13,"DIR PRO","Linha de produção","Duas saídas acionam juntas (P6)","Normal","","NC-0011","Ponte de solda","Montagem/solda","","Devolvida à linha (P6)"],
+    ["EX-09",16,"DIR PRO","Linha de produção","LED da saída 7 apagado (P6)","Normal","","NC-0013","Componente errado/invertido","Montagem/solda","LED saída 7","Devolvida à linha (P6)"],
     ["EX-10",19,"REP","Garantia","Não comunica pelo rádio","Urgente","REP-0311","Cliente C","","","",""],
-    ["EX-11",21,"DIR-NUTRI","Linha de produção","Hidrômetro HID3 não conta (P7)","Normal","","NC-0015","Componente danificado","Não identificada","R48",""],
-    ["EX-12",22,"DIR-PRO","Retorno de campo","Não inicializa pelo painel solar","Normal","DP-0388","Cliente D","","","",""],
-  ].map(r=>({id:r[0],entrada:d(r[1]),produto:r[2],versao:({"EX-04":"v1.2","EX-07":"v3.1","EX-05":"não identificada"})[r[0]]||"",linha:catInfo(r[2]).linha,tipo:catInfo(r[2]).tipo,origem:r[3],relatado:r[4],prio:r[5],serie:r[6],ref:r[7],defeito:r[8],causa:r[9],componentes:r[10],destino:r[11],exemplo:true}));
+    ["EX-11",21,"DIR Nutri","Linha de produção","Hidrômetro HID3 não conta (P7)","Normal","","NC-0015","Componente danificado","Não identificada","R48",""],
+    ["EX-12",22,"DIR PRO","Retorno de campo","Não inicializa pelo painel solar","Normal","DP-0388","Cliente D","","","",""],
+  ].map(r=>({id:r[0],entrada:d(r[1]),produto:r[2],versao:({"EX-04":"DIR ENERGY V2.0","EX-07":"CCPS V3.1","EX-05":"não identificada","EX-10":"DIR V5.1"})[r[0]]||((["DIR PRO","DIR Nutri"].includes(r[2]))?"ECO v2.1":null),
+    firmware:({"EX-04":"D011","EX-07":"CCPS_V5","EX-10":"D011"})[r[0]]||(r[2]==="DIR PRO"?"D011":r[2]==="DIR Nutri"?"D014":null),linha:catInfo(r[2]).linha,tipo:catInfo(r[2]).tipo,origem:r[3],relatado:r[4],prio:r[5],serie:r[6],ref:r[7],defeito:r[8],causa:r[9],componentes:r[10],destino:r[11],exemplo:true}));
   const [TR,DG,PD,RP,TS,AC,OR,DOC,TRN] = Object.keys(ATIV);
   const Dx = [
     [1,"GERAL",OR,3,"Organização da bancada e levantamento de ferramentas e componentes","", "","","","Bico 3 mm para estação de ar quente","Dificuldade","Estação de ar quente só tem bico largo"],
@@ -690,7 +810,7 @@ function exemplo(){
     [6,"EX-04",DG,1,"Trilhas corroídas sob o MCU; reparo custa mais que placa nova","Irrecuperável","","Trilhas sob o MCU","","","Descoberta técnica","Instalação no cliente sem caixa vedada"],
     [6,"EX-05",TR,.5,"Saídas 15 a 18 não acionam","Em diagnóstico","Reprovado","","","","",""],
     [7,"EX-05",DG,3,"Rastreio das trilhas das saídas 15 a 18; placa é de revisão antiga","Em diagnóstico","","Saídas 15-18","","","",""],
-    [8,"EX-05",PD,2,"Procura do esquemático da revisão antiga, sem sucesso","Aguardando informação","","","Falta de esquemático/documentação","","Ponto para a gestão","Precisamos dos esquemáticos de todas as revisões da DIR-PRO"],
+    [8,"EX-05",PD,2,"Procura do esquemático da revisão antiga, sem sucesso","Aguardando informação","","","Falta de esquemático/documentação","","Ponto para a gestão","Precisamos dos esquemáticos de todas as revisões da DIR PRO"],
     [8,"EX-06",TR,.5,"5V em 4,3 V no test point","Em diagnóstico","Reprovado","","","","",""],
     [8,"EX-06",DG,1,"Regulador de 5V aquecendo acima do normal","Em reparo","","Regulador 5V","","","",""],
     [9,"EX-06",RP,1,"Troca do regulador com estação de ar quente","Em teste","","Regulador 5V","","","",""],
@@ -722,17 +842,17 @@ function exemplo(){
   ].map((r,i)=>({data:d(r[0]),placa_id:r[1]==="GERAL"?null:r[1],atividade:r[2],horas:r[3],feito:r[4],status:nz(r[5]),teste:nz(r[6]),componente:nz(r[7]),impedimento:nz(r[8]),material:nz(r[9]),destaque:nz(r[10]),obs:nz(r[11]),criado_em:new Date(Date.now()-60000+i*100).toISOString(),exemplo:true}));
   const M = [
     [1,"Bico 3 mm para estação de ar quente","",1,"GERAL","Normal","Solicitado",0,""],
-    [3,"Transistor Q5","Mesmo código da BOM DIR-PRO",5,"EX-02","Urgente","Recebido",14,"Compras"],
-    [3,"Driver de ponte H (U22)","Código da BOM DIR-NUTRI",5,"EX-03","Urgente","Comprado",0,"Prazo do fornecedor: 15 dias"],
+    [3,"Transistor Q5","Mesmo código da BOM DIR PRO",5,"EX-02","Urgente","Recebido",14,"Compras"],
+    [3,"Driver de ponte H (U22)","Código da BOM DIR Nutri",5,"EX-03","Urgente","Comprado",0,"Prazo do fornecedor: 15 dias"],
     [8,"Regulador 5V","Código da BOM DIR",10,"EX-06","Normal","Recebido",9,"Estoque da produção"],
-    [16,"Expansor de I/O (U12)","Código da BOM DIR-PRO",2,"EX-05","Alta","Recebido",17,"Estoque da produção"],
+    [16,"Expansor de I/O (U12)","Código da BOM DIR PRO",2,"EX-05","Alta","Recebido",17,"Estoque da produção"],
     [21,"Lupa de bancada ou microscópio","Aumento de 10x a 40x",1,"GERAL","Normal","Solicitado",0,""],
   ].map(r=>({data:d(r[0]),item:r[1],spec:r[2],qtd:r[3],placa:r[4],urg:r[5],status:r[6],recebido:r[7]?d(r[7]):null,obs:r[8],exemplo:true}));
   const C = [
-    [6,"Falha de rastreabilidade","Placas de campo sem identificação de revisão","Não dá para saber a revisão da placa sem comparar com fotos","EX-04; EX-05","DIR-PRO","Etiqueta com revisão e nº de série já na montagem","Gestão","Registrado"],
-    [8,"Dependência de outro setor","Esquemáticos de revisões antigas indisponíveis","Placas de campo são de revisões anteriores; diagnóstico parou 5 dias esperando","EX-05","DIR-PRO","Engenharia manter pasta com todas as revisões","Gestão","Em análise"],
-    [9,"Procedimento padronizável","Troca do regulador de 5V","Sequência repetível: remover com ar quente, limpar ilhas, soldar, medir 5V","EX-06","DIR-NUTRI","Escrever POP de manutenção","Técnico","Registrado"],
-    [14,"Defeito recorrente","Ponte de solda no MCU das DIR-PRO","Dois casos no mês vindos da linha","EX-01; EX-08","DIR-PRO","Levar à montagem: revisar estêncil e inspeção depois da solda","Gestão / montagem","Em análise"],
+    [6,"Falha de rastreabilidade","Placas de campo sem identificação de revisão","Não dá para saber a revisão da placa sem comparar com fotos","EX-04; EX-05","DIR PRO","Etiqueta com revisão e nº de série já na montagem","Gestão","Registrado"],
+    [8,"Dependência de outro setor","Esquemáticos de revisões antigas indisponíveis","Placas de campo são de revisões anteriores; diagnóstico parou 5 dias esperando","EX-05","DIR PRO","Engenharia manter pasta com todas as revisões","Gestão","Em análise"],
+    [9,"Procedimento padronizável","Troca do regulador de 5V","Sequência repetível: remover com ar quente, limpar ilhas, soldar, medir 5V","EX-06","DIR Nutri","Escrever POP de manutenção","Técnico","Registrado"],
+    [14,"Defeito recorrente","Ponte de solda no MCU das DIR PRO","Dois casos no mês vindos da linha","EX-01; EX-08","DIR PRO","Levar à montagem: revisar estêncil e inspeção depois da solda","Gestão / montagem","Em análise"],
     [21,"Necessidade de ferramenta","Lupa ou microscópio para inspeção do MCU","Pontes finas só aparecem com aumento","EX-01; EX-08","","Comprar lupa de bancada","Gestão","Registrado"],
   ].map(r=>({data:d(r[0]),tipo:r[1],titulo:r[2],descricao:r[3],placas:r[4],produto:nz(r[5]),acao:r[6],resp:r[7],status:r[8],exemplo:true}));
   return {P,Dx,M,C};

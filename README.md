@@ -5,6 +5,7 @@ Sistema web da manutenção de placas eletrônicas da 3V3 Tecnologia: cadastro d
 - **Front-end:** HTML, CSS e JavaScript puros (sem build). Publicado pelo GitHub Pages.
 - **Banco e login:** Supabase (Postgres + Auth + Realtime).
 - **Segurança:** as regras de acesso ficam no banco (Row Level Security). O site só usa a chave pública.
+- **Catálogo:** os 152 itens da planilha oficial *3V3 Tecnologia LTDA - Produtos 2026.1* (fabricação própria e revenda), com linha, subgrupo, versão de PCB, firmware e fabricante. O admin pode editar em `[8] CONFIG` e voltar ao oficial com *restaurar catálogo oficial 2026.1*.
 
 ## Perfis
 
@@ -21,8 +22,12 @@ O **primeiro usuário** criado no Supabase vira Admin automaticamente. Os seguin
 ### 1. Banco de dados
 
 1. Abra o projeto no Supabase: `https://supabase.com/dashboard/project/cebievbbiyxzmkjpjgse`.
-2. Vá em **SQL Editor > New query**, cole todo o conteúdo de [`supabase/migrations/0001_inicial.sql`](supabase/migrations/0001_inicial.sql) e clique em **Run**.
-   O script pode ser rodado de novo sem perder dados.
+2. Vá em **SQL Editor > New query** e rode, nesta ordem, o conteúdo de cada arquivo (cole e clique em **Run**):
+   1. [`supabase/migrations/0001_inicial.sql`](supabase/migrations/0001_inicial.sql): tabelas, perfis, regras de acesso e tempo real.
+   2. [`supabase/migrations/0002_firmware.sql`](supabase/migrations/0002_firmware.sql): campo de versão de firmware na placa.
+   3. Opcional: [`supabase/seeds/pendencias_produtos_2026_1.sql`](supabase/seeds/pendencias_produtos_2026_1.sql): as 34 pendências por produto da planilha Produtos 2026.1 entram na base de Conhecimento.
+
+   Todos podem ser rodados de novo sem perder nem duplicar dados.
 
 ### 2. Login
 
@@ -76,7 +81,8 @@ index.html                      telas (HTML)
 assets/style.css                visual de terminal (tema claro e escuro)
 assets/app.js                   lógica, cálculos do relatório e acesso ao Supabase
 config.js                       URL e chave pública do Supabase
-supabase/migrations/            schema, regras de acesso e tempo real
+supabase/migrations/            schema, regras de acesso e tempo real (rodar em ordem)
+supabase/seeds/                 dados iniciais opcionais (pendências 2026.1)
 ```
 
 ## Rodar localmente

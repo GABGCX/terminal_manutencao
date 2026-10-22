@@ -70,7 +70,8 @@
     <form id="f-placa" autocomplete="off">
       <label><span>Data de entrada <span class="req">*</span></span><input type="date" id="pl-entrada" name="entrada" required></label>
       <label><span>Produto <span class="req">*</span></span><select id="pl-produto" name="produto" required></select></label>
-      <label>Versão / revisão<input id="pl-versao" name="versao" list="dl-versoes" maxlength="40" placeholder="ex.: v1.2 ou não identificada"></label>
+      <label>Placa (PCB)<input id="pl-versao" name="versao" list="dl-versoes" maxlength="40" placeholder="ex.: DIR V5.1"></label>
+      <label>Firmware<input id="pl-firmware" name="firmware" list="dl-firmware" maxlength="40" placeholder="ex.: D011"></label>
       <label><span>Origem <span class="req">*</span></span><select id="pl-origem" name="origem" required></select></label>
       <label>Prioridade<select id="pl-prio" name="prio"></select></label>
       <label class="w2" id="pl-rel-l"><span>Defeito relatado <span class="req">*</span></span><input id="pl-relatado" name="relatado" required maxlength="200" placeholder="ex.: reprovada na JIGA (P4)"></label>
@@ -84,7 +85,7 @@
     <div class="filters">
       <div class="chips" id="pl-filt"></div>
       <select id="pl-linha" style="width:auto;max-width:220px" aria-label="linha"></select>
-      <input id="pl-busca" type="search" placeholder="buscar ID, produto, versão, defeito...">
+      <input id="pl-busca" type="search" placeholder="buscar ID, produto, PCB, firmware, defeito...">
     </div>
     <div id="pl-lista"></div>
   </div>
@@ -101,7 +102,8 @@
     <div class="box"><h2>Histórico <small id="fi-hcount"></small></h2><ul class="tl" id="fi-tl"></ul></div>
     <div class="box w-only"><h2>Cadastro e conclusão</h2>
       <form id="f-ficha" autocomplete="off">
-        <label>Versão / revisão<input id="fi-versao" name="versao" list="dl-versoes" maxlength="40"></label>
+        <label>Placa (PCB)<input id="fi-versao" name="versao" list="dl-versoes" maxlength="40"></label>
+        <label>Firmware<input id="fi-firmware" name="firmware" list="dl-firmware" maxlength="40"></label>
         <label>Defeito constatado<select id="fi-defeito" name="defeito"></select></label>
         <label>Causa provável<select id="fi-causa" name="causa"></select></label>
         <label class="wide">Componentes substituídos<input id="fi-comp" name="componentes" maxlength="160"></label>
@@ -155,6 +157,7 @@
   </div>
   <datalist id="dl-placas"></datalist>
   <datalist id="dl-versoes"></datalist>
+  <datalist id="dl-firmware"></datalist>
 </section>
 
 <!-- MATERIAIS -->
@@ -231,10 +234,10 @@
     <form id="f-cfg" autocomplete="off">
       <label class="w2">Responsável pelo setor (vai no relatório)<input id="cf-tec" name="tecnico" maxlength="60"></label>
       <label>Dias sem registro para alerta<input type="number" id="cf-alerta" name="alerta" min="1" max="60" step="1"></label>
-      <label class="wide">Catálogo de produtos: uma linha por produto, no formato  Produto ; Linha ; Tipo ; versões separadas por vírgula<textarea id="cf-cat" name="catalogo" rows="14" maxlength="12000" style="font-size:12px;white-space:pre;overflow-x:auto"></textarea></label>
+      <label class="wide">Catálogo de produtos: uma linha por produto, no formato  Produto ; Linha ; Subgrupo ; PCB ; Firmware ; Fabricante (várias versões separadas por vírgula)<textarea id="cf-cat" name="catalogo" rows="14" maxlength="12000" style="font-size:12px;white-space:pre;overflow-x:auto"></textarea></label>
       <label class="wide" style="text-transform:none;letter-spacing:0"><span class="muted">O produto escolhido no cadastro puxa linha, tipo e as versões sugeridas. Placas já cadastradas não mudam.</span></label>
       <div class="err" id="cf-err"></div>
-      <div class="row wide"><button class="btn" type="submit">Salvar</button></div>
+      <div class="row wide sp"><button class="btn" type="submit">Salvar</button><button class="lk" type="button" id="cf-restaurar">restaurar catálogo oficial 2026.1</button></div>
     </form>
   </div>
   <div class="box"><h2>Como usar</h2>
